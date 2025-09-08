@@ -186,7 +186,7 @@ void init_all_components(void) {
     printf(" 完成\n");
     
     printf("8. 初始化运动控制...");
-    control_init();  // 新增运动控制初始化
+    init_wheel();  // 新增运动控制初始化
     printf(" 完成\n");
     
     printf("9. 初始化摄像头...");
@@ -202,7 +202,7 @@ void cleanup_all_components(void) {
     rgb_cleanup();
     clock_cleanup();
     servo_cleanup();
-    control_cleanup();  // 新增运动控制清理
+    clean_wheel();  // 新增运动控制清理
     camera_cleanup();   // 新增摄像头清理
     
     printf("硬件资源清理完成\n");
