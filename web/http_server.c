@@ -237,6 +237,8 @@ void handle_api_request(http_request_t *request, http_response_t *response) {
         api_get_distance(request, response);
     } else if (strcmp(request->path, "/api/motion") == 0) {
         api_control_motion(request, response);  // 新增运动控制路由
+    } else if (strcmp(request->path, "/api/camera") == 0) {
+        api_camera_control(request, response);  // 新增摄像头控制路由
     } else {
         create_error_response(response, 404, "API Not Found");
     }

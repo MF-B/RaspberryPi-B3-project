@@ -77,6 +77,7 @@ void api_control_beep(http_request_t *request, http_response_t *response);
 void api_control_servo(http_request_t *request, http_response_t *response);
 void api_get_distance(http_request_t *request, http_response_t *response);
 void api_control_motion(http_request_t *request, http_response_t *response);  // 新增运动控制
+void api_camera_control(http_request_t *request, http_response_t *response);  // 新增摄像头控制
 
 // 服务器状态
 extern volatile int server_running;

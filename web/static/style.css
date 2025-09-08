@@ -967,3 +967,103 @@ body {
     color: #fff;
     font-weight: bold;
 }
+
+/* Camera Panel Styles */
+.camera-panel {
+    margin: 20px 0;
+}
+
+.camera-preview {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.preview-container {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#camera-preview {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.1rem;
+    height: 100%;
+}
+
+.preview-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.camera-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.camera-controls .btn {
+    min-width: 120px;
+    padding: 10px 15px;
+}
+
+.camera-status {
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-top: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.camera-status .status-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
+    font-size: 0.9rem;
+}
+
+.camera-status .status-label {
+    color: #bdc3c7;
+}
+
+.camera-status .status-value {
+    color: #fff;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .preview-container {
+        max-width: 100%;
+    }
+    
+    .camera-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .camera-controls .btn {
+        width: 100%;
+        max-width: 200px;
+    }
+}

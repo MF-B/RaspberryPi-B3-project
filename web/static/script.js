@@ -5,6 +5,8 @@ const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 let autoRefresh = false;
 let autoRefreshInterval = null;
 let currentServoAngle = 90;
+let cameraStreamActive = false;
+let cameraPreviewUpdateInterval = null;
 
 // DOM元素
 const elements = {
@@ -46,7 +48,15 @@ const elements = {
     speedValue: document.getElementById('speed-value'),
     motionDirection: document.getElementById('motion-direction'),
     motionSpeed: document.getElementById('motion-speed'),
-    motionState: document.getElementById('motion-state')
+    motionState: document.getElementById('motion-state'),
+    // 摄像头元素
+    cameraPreview: document.getElementById('camera-preview'),
+    cameraSnapshot: document.getElementById('camera-snapshot'),
+    cameraStreamBtn: document.getElementById('camera-stream-btn'),
+    cameraStatus: document.getElementById('camera-status'),
+    cameraResolution: document.getElementById('camera-resolution'),
+    cameraFrameCount: document.getElementById('camera-frame-count'),
+    previewPlaceholder: document.querySelector('.preview-placeholder')
 };
 
 // 工具函数
@@ -628,6 +638,10 @@ async function initializeApp() {
             MotionController.setSpeed(MotionController.currentSpeed);
         }
         
+        // 初始化摄像头
+        Camera.initEventListeners();
+        await Camera.getStatus();
+        
         Utils.showNotification('系统初始化完成', 'success');
     } catch (error) {
         console.error('初始化失败:', error);
@@ -663,3 +677,169 @@ window.addEventListener('offline', () => {
     Utils.updateConnectionStatus(false);
     Utils.showNotification('网络连接已断开', 'error');
 });
+
+// 摄像头控制模块
+const Camera = {
+    // 拍照
+    async takeSnapshot() {
+        try {
+            Utils.showLoading();
+            
+            const response = await fetch(`${API_BASE_URL}/api/camera`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "snapshot"
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // 更新预览图片
+                if (data.data.image_path) {
+                    elements.cameraPreview.src = data.data.image_path + "?t=" + Date.now();
+                    elements.cameraPreview.style.display = "block";
+                    elements.previewPlaceholder.style.display = "none";
+                }
+                Utils.showNotification("拍照成功", "success");
+            } else {
+                Utils.showNotification(`拍照失败: ${data.message}`, "error");
+            }
+        } catch (error) {
+            console.error("拍照失败:", error);
+            Utils.showNotification("拍照失败，请检查网络连接", "error");
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 开始/停止视频流
+    async toggleStream() {
+        try {
+            Utils.showLoading();
+            
+            const action = cameraStreamActive ? "stop_stream" : "start_stream";
+            
+            const response = await fetch(`${API_BASE_URL}/api/camera`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: action
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                cameraStreamActive = !cameraStreamActive;
+                
+                if (cameraStreamActive) {
+                    elements.cameraStreamBtn.textContent = "停止流";
+                    elements.cameraStreamBtn.classList.remove("btn-success");
+                    elements.cameraStreamBtn.classList.add("btn-danger");
+                    // 开始更新预览
+                    this.startPreviewUpdate();
+                } else {
+                    elements.cameraStreamBtn.textContent = "开始流";
+                    elements.cameraStreamBtn.classList.remove("btn-danger");
+                    elements.cameraStreamBtn.classList.add("btn-success");
+                    // 停止更新预览
+                    this.stopPreviewUpdate();
+                }
+                
+                Utils.showNotification(cameraStreamActive ? "视频流已开始" : "视频流已停止", "success");
+            } else {
+                Utils.showNotification(`视频流控制失败: ${data.message}`, "error");
+            }
+        } catch (error) {
+            console.error("视频流控制失败:", error);
+            Utils.showNotification("视频流控制失败，请检查网络连接", "error");
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 开始预览更新
+    startPreviewUpdate() {
+        if (cameraPreviewUpdateInterval) {
+            clearInterval(cameraPreviewUpdateInterval);
+        }
+        
+        cameraPreviewUpdateInterval = setInterval(() => {
+            if (elements.cameraPreview && cameraStreamActive) {
+                elements.cameraPreview.src = `${API_BASE_URL}/static/images/stream.jpg?t=${Date.now()}`;
+                elements.cameraPreview.style.display = "block";
+                elements.previewPlaceholder.style.display = "none";
+            }
+        }, 500); // 每0.5秒更新一次
+    },
+
+    // 停止预览更新
+    stopPreviewUpdate() {
+        if (cameraPreviewUpdateInterval) {
+            clearInterval(cameraPreviewUpdateInterval);
+            cameraPreviewUpdateInterval = null;
+        }
+    },
+
+    // 获取摄像头状态
+    async getStatus() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/camera`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                // 更新状态显示
+                if (elements.cameraStatus) {
+                    elements.cameraStatus.textContent = data.data.status || "未知";
+                }
+                if (elements.cameraResolution) {
+                    elements.cameraResolution.textContent = data.data.resolution || "640x480";
+                }
+                if (elements.cameraFrameCount) {
+                    elements.cameraFrameCount.textContent = data.data.frame_count || "0";
+                }
+                
+                // 更新流状态
+                if (data.data.streaming !== undefined) {
+                    cameraStreamActive = data.data.streaming;
+                    if (elements.cameraStreamBtn) {
+                        elements.cameraStreamBtn.textContent = cameraStreamActive ? "停止流" : "开始流";
+                        elements.cameraStreamBtn.classList.toggle("btn-danger", cameraStreamActive);
+                        elements.cameraStreamBtn.classList.toggle("btn-success", !cameraStreamActive);
+                    }
+                    
+                    if (cameraStreamActive) {
+                        this.startPreviewUpdate();
+                    } else {
+                        this.stopPreviewUpdate();
+                    }
+                }
+            }
+            return data;
+        } catch (error) {
+            console.error("获取摄像头状态失败:", error);
+            return null;
+        }
+    },
+
+    // 初始化摄像头事件监听器
+    initEventListeners() {
+        if (elements.cameraSnapshot) {
+            elements.cameraSnapshot.addEventListener("click", () => {
+                this.takeSnapshot();
+            });
+        }
+
+        if (elements.cameraStreamBtn) {
+            elements.cameraStreamBtn.addEventListener("click", () => {
+                this.toggleStream();
+            });
+        }
+    }
+};

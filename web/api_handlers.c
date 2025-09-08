@@ -6,6 +6,7 @@
 #include "../components/usonic.h"
 #include "../components/clock.h"
 #include "../components/control.h"  // 新增运动控制
+#include "../components/camera.h"   // 新增摄像头
 #include <cjson/cJSON.h>
 
 // API: 获取系统状态
@@ -25,6 +26,7 @@ void api_get_status(http_request_t *request, http_response_t *response) {
     cJSON_AddStringToObject(components, "ultrasonic", "ready");
     cJSON_AddStringToObject(components, "clock", "ready");
     cJSON_AddStringToObject(components, "motion", "ready");  // 新增运动控制
+    cJSON_AddStringToObject(components, "camera", camera_is_available() ? "ready" : "unavailable");  // 新增摄像头
     
     cJSON_AddItemToObject(json, "status", status);
     cJSON_AddItemToObject(json, "timestamp", timestamp);
@@ -406,6 +408,107 @@ void api_control_motion(http_request_t *request, http_response_t *response) {
             case MOTION_DECELERATE: motion_name = "decelerate"; break;
         }
         cJSON_AddStringToObject(json, "current_motion", motion_name);
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+
+// API: 摄像头控制
+void api_camera_control(http_request_t *request, http_response_t *response) {
+    printf("API请求: %s %s\n", request->method, request->path);
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        // 解析POST数据
+        printf("解析摄像头控制JSON数据...\n");
+        cJSON *post_json = cJSON_Parse(request->body);
+        if (!post_json) {
+            printf("JSON解析失败\n");
+            create_error_response(response, 400, "Invalid JSON");
+            return;
+        }
+        
+        cJSON *action = cJSON_GetObjectItem(post_json, "action");
+        if (!action || !cJSON_IsString(action)) {
+            printf("缺少action参数\n");
+            create_error_response(response, 400, "Missing action parameter");
+            cJSON_Delete(post_json);
+            return;
+        }
+        
+        const char *action_str = cJSON_GetStringValue(action);
+        printf("执行摄像头动作: %s\n", action_str);
+        
+        if (strcmp(action_str, "snapshot") == 0) {
+            printf("拍摄快照\n");
+            if (camera_take_snapshot() == 0) {
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Snapshot taken");
+                cJSON_AddStringToObject(json, "image_url", "/images/snapshot.jpg");
+            } else {
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to take snapshot");
+            }
+        } else if (strcmp(action_str, "start_stream") == 0) {
+            printf("启动视频流\n");
+            if (camera_start_stream() == 0) {
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Stream started");
+                cJSON_AddStringToObject(json, "stream_url", "/images/stream.jpg");
+            } else {
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to start stream");
+            }
+        } else if (strcmp(action_str, "stop_stream") == 0) {
+            printf("停止视频流\n");
+            camera_stop_stream();
+            cJSON_AddStringToObject(json, "status", "success");
+            cJSON_AddStringToObject(json, "message", "Stream stopped");
+        } else {
+            printf("无效的动作: %s\n", action_str);
+            create_error_response(response, 400, "Invalid action");
+            cJSON_Delete(post_json);
+            return;
+        }
+        
+        cJSON_Delete(post_json);
+    } else if (strcmp(request->method, "GET") == 0) {
+        // 获取摄像头状态
+        camera_state_t state = camera_get_state();
+        
+        cJSON_AddStringToObject(json, "status", "success");
+        
+        cJSON *camera_info = cJSON_CreateObject();
+        const char *status_str = "unknown";
+        switch (state.status) {
+            case CAMERA_STATUS_STOPPED: status_str = "stopped"; break;
+            case CAMERA_STATUS_RUNNING: status_str = "running"; break;
+            case CAMERA_STATUS_ERROR: status_str = "error"; break;
+        }
+        cJSON_AddStringToObject(camera_info, "status", status_str);
+        cJSON_AddBoolToObject(camera_info, "available", camera_is_available());
+        cJSON_AddBoolToObject(camera_info, "streaming", state.stream_running);
+        cJSON_AddNumberToObject(camera_info, "frame_count", state.frame_count);
+        cJSON_AddNumberToObject(camera_info, "last_frame_time", state.last_frame_time);
+        
+        cJSON *config = cJSON_CreateObject();
+        cJSON_AddNumberToObject(config, "width", state.config.width);
+        cJSON_AddNumberToObject(config, "height", state.config.height);
+        cJSON_AddNumberToObject(config, "fps", state.config.fps);
+        cJSON_AddNumberToObject(config, "quality", state.config.quality);
+        cJSON_AddItemToObject(camera_info, "config", config);
+        
+        cJSON_AddItemToObject(json, "camera", camera_info);
     } else {
         create_error_response(response, 405, "Method Not Allowed");
         cJSON_Delete(json);

@@ -214,6 +214,48 @@
                 </div>
             </section>
 
+            <!-- 摄像头控制面板 -->
+            <section class="card camera-panel">
+                <h2><i class="fas fa-camera"></i> 摄像头控制</h2>
+                
+                <div class="camera-preview">
+                    <div class="preview-container" id="camera-preview-container">
+                        <img id="camera-preview" src="" alt="摄像头预览" style="display: none;" />
+                        <div class="preview-placeholder" id="camera-placeholder">
+                            <i class="fas fa-camera"></i>
+                            <p>点击拍照开始预览</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="camera-controls">
+                    <button id="camera-snapshot" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> 拍照
+                    </button>
+                    <button id="camera-start-stream" class="btn btn-success">
+                        <i class="fas fa-video"></i> 开始视频流
+                    </button>
+                    <button id="camera-stop-stream" class="btn btn-danger">
+                        <i class="fas fa-stop"></i> 停止视频流
+                    </button>
+                </div>
+                
+                <div class="camera-status">
+                    <div class="status-row">
+                        <span class="status-label">状态:</span>
+                        <span class="status-value" id="camera-status">未知</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">分辨率:</span>
+                        <span class="status-value" id="camera-resolution">640x480</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">帧数:</span>
+                        <span class="status-value" id="camera-frame-count">0</span>
+                    </div>
+                </div>
+            </section>
+
             <!-- 系统状态面板 -->
             <section class="card system-panel">
                 <h2><i class="fas fa-server"></i> 系统状态</h2>
