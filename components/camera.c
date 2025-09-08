@@ -4,6 +4,36 @@
 static camera_state_t g_camera_state = {0};
 static int g_camera_initialized = 0;
 
+// 执行Python摄像头脚本并解析结果
+static int execute_camera_command(const char* command, char* result_buffer, size_t buffer_size) {
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "cd /home/mf1bzz/Code/raspberry/RaspberryPi-B3-project && python3 components/camera.py %s 2>/dev/null", command);
+    
+    FILE* fp = popen(cmd, "r");
+    if (!fp) {
+        printf("执行摄像头命令失败: %s\n", command);
+        return -1;
+    }
+    
+    // 读取命令输出
+    if (fgets(result_buffer, buffer_size, fp) == NULL) {
+        pclose(fp);
+        return -1;
+    }
+    
+    int exit_code = pclose(fp);
+    return exit_code;
+}
+
+// 解析JSON响应（简单的JSON解析）
+static int parse_success_from_json(const char* json_str) {
+    // 简单查找 "success": true
+    if (strstr(json_str, "\"success\": true") || strstr(json_str, "\"success\":true")) {
+        return 1;
+    }
+    return 0;
+}
+
 // 初始化摄像头
 int camera_init(void) {
     if (g_camera_initialized) {
@@ -30,14 +60,22 @@ int camera_init(void) {
     // 创建图片存储目录
     system("mkdir -p web/static/images");
     
-    // 检查摄像头设备
-    if (camera_check_device() != 0) {
-        printf("警告: 摄像头设备不可用\n");
+    // 初始化Python摄像头
+    char result[1024];
+    if (execute_camera_command("init", result, sizeof(result)) == 0) {
+        if (parse_success_from_json(result)) {
+            printf("摄像头模块初始化成功\n");
+            g_camera_state.status = CAMERA_STATUS_STOPPED;
+        } else {
+            printf("摄像头初始化失败\n");
+            g_camera_state.status = CAMERA_STATUS_ERROR;
+        }
+    } else {
+        printf("摄像头命令执行失败\n");
         g_camera_state.status = CAMERA_STATUS_ERROR;
     }
     
     g_camera_initialized = 1;
-    printf("摄像头模块初始化完成\n");
     return 0;
 }
 
@@ -52,21 +90,25 @@ int camera_cleanup(void) {
     // 停止流式传输
     camera_stop_stream();
     
+    // 调用Python清理命令
+    char result[1024];
+    execute_camera_command("cleanup", result, sizeof(result));
+    
     g_camera_initialized = 0;
     printf("摄像头资源清理完成\n");
     return 0;
 }
 
-// 检查摄像头设备是否可用
-int camera_check_device(void) {
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "test -c %s", g_camera_state.config.device);
-    return system(cmd);
-}
-
 // 检查摄像头是否可用
 int camera_is_available(void) {
-    return camera_check_device() == 0;
+    char result[1024];
+    if (execute_camera_command("status", result, sizeof(result)) == 0) {
+        // 检查JSON中的available字段
+        if (strstr(result, "\"available\": true") || strstr(result, "\"available\":true")) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 // 拍摄快照
@@ -76,89 +118,20 @@ int camera_take_snapshot(void) {
         return -1;
     }
     
-    if (!camera_is_available()) {
-        printf("摄像头设备不可用\n");
-        g_camera_state.status = CAMERA_STATUS_ERROR;
-        return -1;
-    }
-    
     printf("拍摄快照...\n");
-    return camera_capture_frame(CAMERA_SNAPSHOT_PATH);
-}
-
-// 捕获单帧图像
-int camera_capture_frame(const char* output_path) {
-    char cmd[512];
     
-    // 使用raspistill命令（如果是树莓派）
-    if (access("/usr/bin/raspistill", F_OK) == 0) {
-        snprintf(cmd, sizeof(cmd), 
-            "raspistill -o %s -w %d -h %d -q %d -t 1 -n > /dev/null 2>&1",
-            output_path,
-            g_camera_state.config.width,
-            g_camera_state.config.height,
-            g_camera_state.config.quality
-        );
-    }
-    // 使用fswebcam命令（通用USB摄像头）
-    else if (access("/usr/bin/fswebcam", F_OK) == 0) {
-        snprintf(cmd, sizeof(cmd),
-            "fswebcam -d %s -r %dx%d --jpeg %d --no-banner %s > /dev/null 2>&1",
-            g_camera_state.config.device,
-            g_camera_state.config.width,
-            g_camera_state.config.height,
-            g_camera_state.config.quality,
-            output_path
-        );
-    }
-    // 使用ffmpeg命令（备选方案）
-    else if (access("/usr/bin/ffmpeg", F_OK) == 0) {
-        snprintf(cmd, sizeof(cmd),
-            "ffmpeg -f v4l2 -i %s -vframes 1 -s %dx%d %s -y > /dev/null 2>&1",
-            g_camera_state.config.device,
-            g_camera_state.config.width,
-            g_camera_state.config.height,
-            output_path
-        );
-    }
-    else {
-        printf("未找到摄像头捕获工具 (raspistill, fswebcam, ffmpeg)\n");
-        return -1;
-    }
-    
-    int result = system(cmd);
-    if (result == 0) {
-        printf("成功拍摄快照: %s\n", output_path);
-        g_camera_state.last_frame_time = time(NULL);
-        g_camera_state.frame_count++;
-        return 0;
-    } else {
-        printf("拍摄快照失败\n");
-        return -1;
-    }
-}
-
-// 摄像头流式传输工作线程
-void* camera_stream_worker(void* arg) {
-    (void)arg; // 避免未使用参数警告
-    
-    printf("摄像头流式传输线程启动\n");
-    
-    while (g_camera_state.stream_running) {
-        if (camera_capture_frame(CAMERA_STREAM_PATH) == 0) {
-            g_camera_state.status = CAMERA_STATUS_RUNNING;
-        } else {
-            g_camera_state.status = CAMERA_STATUS_ERROR;
-            printf("流式传输出错，停止线程\n");
-            break;
+    char result[1024];
+    if (execute_camera_command("snapshot", result, sizeof(result)) == 0) {
+        if (parse_success_from_json(result)) {
+            printf("快照拍摄成功\n");
+            g_camera_state.last_frame_time = time(NULL);
+            g_camera_state.frame_count++;
+            return 0;
         }
-        
-        // 根据FPS设置延迟
-        usleep(1000000 / g_camera_state.config.fps);
     }
     
-    printf("摄像头流式传输线程结束\n");
-    return NULL;
+    printf("快照拍摄失败\n");
+    return -1;
 }
 
 // 开始流式传输
@@ -173,25 +146,20 @@ int camera_start_stream(void) {
         return 0;
     }
     
-    if (!camera_is_available()) {
-        printf("摄像头设备不可用\n");
-        g_camera_state.status = CAMERA_STATUS_ERROR;
-        return -1;
-    }
-    
     printf("启动摄像头流式传输...\n");
     
-    g_camera_state.stream_running = 1;
-    
-    // 创建流式传输线程
-    if (pthread_create(&g_camera_state.stream_thread, NULL, camera_stream_worker, NULL) != 0) {
-        printf("创建流式传输线程失败\n");
-        g_camera_state.stream_running = 0;
-        return -1;
+    char result[1024];
+    if (execute_camera_command("start_stream", result, sizeof(result)) == 0) {
+        if (parse_success_from_json(result)) {
+            printf("摄像头流式传输已启动\n");
+            g_camera_state.stream_running = 1;
+            g_camera_state.status = CAMERA_STATUS_RUNNING;
+            return 0;
+        }
     }
     
-    printf("摄像头流式传输已启动\n");
-    return 0;
+    printf("启动流式传输失败\n");
+    return -1;
 }
 
 // 停止流式传输
@@ -202,13 +170,10 @@ int camera_stop_stream(void) {
     
     printf("停止摄像头流式传输...\n");
     
+    char result[1024];
+    execute_camera_command("stop_stream", result, sizeof(result));
+    
     g_camera_state.stream_running = 0;
-    
-    // 等待线程结束
-    if (pthread_join(g_camera_state.stream_thread, NULL) != 0) {
-        printf("等待流式传输线程结束失败\n");
-    }
-    
     g_camera_state.status = CAMERA_STATUS_STOPPED;
     printf("摄像头流式传输已停止\n");
     return 0;
@@ -216,6 +181,25 @@ int camera_stop_stream(void) {
 
 // 获取摄像头状态
 camera_state_t camera_get_state(void) {
+    // 更新状态信息
+    char result[1024];
+    if (execute_camera_command("status", result, sizeof(result)) == 0) {
+        // 简单解析JSON状态
+        if (strstr(result, "\"streaming\": true") || strstr(result, "\"streaming\":true")) {
+            g_camera_state.stream_running = 1;
+            g_camera_state.status = CAMERA_STATUS_RUNNING;
+        } else {
+            g_camera_state.stream_running = 0;
+            g_camera_state.status = CAMERA_STATUS_STOPPED;
+        }
+        
+        // 尝试解析frame_count
+        char *frame_count_pos = strstr(result, "\"frame_count\":");
+        if (frame_count_pos) {
+            sscanf(frame_count_pos + 14, "%d", &g_camera_state.frame_count);
+        }
+    }
+    
     return g_camera_state;
 }
 
