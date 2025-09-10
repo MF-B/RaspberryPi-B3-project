@@ -6,6 +6,7 @@
 #include "../components/clock.h"
 #include "../components/control.h"  // 新增运动控制
 #include "../components/camera.h"   // 新增摄像头
+#include "../log.h"  // log.c 日志库
 #include <cjson/cJSON.h>
 
 // API: 获取系统状态
@@ -41,26 +42,26 @@ void api_get_status(http_request_t *request, http_response_t *response) {
 void api_get_sensors(http_request_t *request, http_response_t *response) {
     (void)request; // 避免未使用参数警告
     
-    printf("API请求: GET /api/sensors\n");
+    log_debug("API请求: GET /api/sensors");
     
     cJSON *json = cJSON_CreateObject();
     cJSON *sensors = cJSON_CreateObject();
     
     // 温度传感器数据 - 使用更短的超时时间避免阻塞
     temp_data_t sensor_data;
-    printf("开始读取温度传感器数据...\n");
+    log_debug("开始读取温度传感器数据...");
     int sensor_result = temp_read_with_retry(&sensor_data, 1); // 只重试1次，减少阻塞时间
-    printf("温度传感器读取结果: %d\n", sensor_result);
+    log_debug("温度传感器读取结果: %d", sensor_result);
     
     cJSON *temp = cJSON_CreateObject();
     if (sensor_result == TEMP_SUCCESS) {
-        printf("温度传感器读取成功: 温度=%.1f°C, 湿度=%.1f%%\n", 
+        log_debug("温度传感器读取成功: 温度=%.1f°C, 湿度=%.1f%%", 
                sensor_data.temperature, sensor_data.humidity);
         cJSON_AddNumberToObject(temp, "temperature", sensor_data.temperature);
         cJSON_AddNumberToObject(temp, "humidity", sensor_data.humidity);
         cJSON_AddStringToObject(temp, "status", "success");
     } else {
-        printf("温度传感器读取失败，错误码: %d\n", sensor_result);
+        log_warn("温度传感器读取失败，错误码: %d", sensor_result);
         cJSON_AddNumberToObject(temp, "temperature", 0);
         cJSON_AddNumberToObject(temp, "humidity", 0);
         cJSON_AddStringToObject(temp, "status", "error");
@@ -92,72 +93,72 @@ void api_get_sensors(http_request_t *request, http_response_t *response) {
 
 // API: 控制RGB LED
 void api_control_rgb(http_request_t *request, http_response_t *response) {
-    printf("API请求: %s %s\n", request->method, request->path);
-    printf("请求体: %s\n", strlen(request->body) > 0 ? request->body : "(empty)");
+    log_debug("API请求: %s %s", request->method, request->path);
+    log_debug("请求体: %s", strlen(request->body) > 0 ? request->body : "(empty)");
     
     cJSON *json = cJSON_CreateObject();
     
     if (strcmp(request->method, "POST") == 0) {
         // 解析POST数据
-        printf("解析JSON数据...\n");
+        log_debug("解析JSON数据...");
         cJSON *post_json = cJSON_Parse(request->body);
         if (!post_json) {
-            printf("JSON解析失败\n");
+            log_error("JSON解析失败");
             create_error_response(response, 400, "Invalid JSON");
             return;
         }
         
         cJSON *action = cJSON_GetObjectItem(post_json, "action");
         if (!action || !cJSON_IsString(action)) {
-            printf("缺少action参数\n");
+            log_error("缺少action参数");
             create_error_response(response, 400, "Missing action parameter");
             cJSON_Delete(post_json);
             return;
         }
         
         const char *action_str = cJSON_GetStringValue(action);
-        printf("执行动作: %s\n", action_str);
+        log_info("执行RGB动作: %s", action_str);
         
         if (strcmp(action_str, "on") == 0) {
             cJSON *color = cJSON_GetObjectItem(post_json, "color");
             if (color && cJSON_IsString(color)) {
                 const char *color_str = cJSON_GetStringValue(color);
-                printf("设置RGB颜色: %s\n", color_str);
+                log_info("设置RGB颜色: %s", color_str);
                 
                 if (strcmp(color_str, "red") == 0) {
-                    printf("调用rgb_set_color(1, 0, 0)\n");
+                    log_debug("调用rgb_set_color(1, 0, 0)");
                     rgb_set_color(1, 0, 0);
                 } else if (strcmp(color_str, "green") == 0) {
-                    printf("调用rgb_set_color(0, 1, 0)\n");
+                    log_debug("调用rgb_set_color(0, 1, 0)");
                     rgb_set_color(0, 1, 0);
                 } else if (strcmp(color_str, "blue") == 0) {
-                    printf("调用rgb_set_color(0, 0, 1)\n");
+                    log_debug("调用rgb_set_color(0, 0, 1)");
                     rgb_set_color(0, 0, 1);
                 } else if (strcmp(color_str, "white") == 0) {
-                    printf("调用rgb_set_color(1, 1, 1)\n");
+                    log_debug("调用rgb_set_color(1, 1, 1)");
                     rgb_set_color(1, 1, 1);
                 } else {
-                    printf("未知颜色，使用默认白色\n");
+                    log_warn("未知颜色，使用默认白色");
                     rgb_set_color(1, 1, 1); // 默认白色
                 }
-                printf("RGB设置完成\n");
+                log_info("RGB设置完成");
                 cJSON_AddStringToObject(json, "status", "success");
                 cJSON_AddStringToObject(json, "message", "RGB LED turned on");
                 cJSON_AddStringToObject(json, "color", color_str);
             } else {
-                printf("缺少color参数\n");
+                log_error("缺少color参数");
                 create_error_response(response, 400, "Missing color parameter");
                 cJSON_Delete(post_json);
                 return;
             }
         } else if (strcmp(action_str, "off") == 0) {
-            printf("关闭RGB LED\n");
+            log_info("关闭RGB LED");
             rgb_set_color(0, 0, 0);
-            printf("RGB关闭完成\n");
+            log_info("RGB关闭完成");
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "RGB LED turned off");
         } else {
-            printf("无效的动作: %s\n", action_str);
+            log_error("无效的动作: %s", action_str);
             create_error_response(response, 400, "Invalid action");
             cJSON_Delete(post_json);
             return;

@@ -1,10 +1,11 @@
 #include "button.h"
+#include "../log.h"
 
 // 初始化按键
 void button_init(void)
 {
     pinMode(BUTTON_PIN, INPUT);
-    printf("按键初始化完成 (引脚 %d)\n", BUTTON_PIN);
+    log_info("按键初始化完成 (引脚 %d)", BUTTON_PIN);
 }
 
 // 检查按键是否按下（高电平）

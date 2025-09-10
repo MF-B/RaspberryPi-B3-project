@@ -4,6 +4,7 @@
 #include "../components/temp.h"
 #include "../components/distance.h"
 #include "../components/clock.h"
+#include "../log.h"  // log.c 日志库
 #include <signal.h>
 #include <cjson/cJSON.h>
 
@@ -13,7 +14,7 @@ static int server_socket = -1;
 
 // 信号处理函数
 void signal_handler(int signal) {
-    printf("\n接收到信号 %d，正在关闭服务器...\n", signal);
+    log_info("接收到信号 %d，正在关闭服务器...", signal);
     server_running = 0;
     if (server_socket != -1) {
         close(server_socket);
@@ -68,8 +69,8 @@ int start_server(int port) {
         return -1;
     }
     
-    printf("HTTP服务器启动成功，监听端口: %d\n", port);
-    printf("访问地址: http://localhost:%d\n", port);
+    log_info("HTTP服务器启动成功，监听端口: %d", port);
+    log_info("访问地址: http://localhost:%d", port);
     
     // 主循环
     while (server_running) {
@@ -189,7 +190,7 @@ int parse_http_request(const char *request_data, http_request_t *request) {
         if (body_len > 0 && (size_t)body_len < sizeof(request->body)) {
             strncpy(request->body, body_start, body_len);
             request->body[body_len] = '\0';
-            printf("解析到请求体: %s\n", request->body);
+            log_debug("解析到请求体: %s", request->body);
         }
     }
     
@@ -220,7 +221,7 @@ void send_http_response(int client_fd, http_response_t *response) {
 
 // 处理API请求
 void handle_api_request(http_request_t *request, http_response_t *response) {
-    printf("API请求: %s %s\n", request->method, request->path);
+    log_info("API请求: %s %s", request->method, request->path);
     
     if (strcmp(request->path, "/api/status") == 0) {
         api_get_status(request, response);
