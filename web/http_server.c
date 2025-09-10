@@ -187,7 +187,7 @@ int parse_http_request(const char *request_data, http_request_t *request) {
     // 提取请求体
     if (body_start && request->content_length > 0) {
         int body_len = strlen(body_start);
-        if (body_len > 0 && body_len < sizeof(request->body)) {
+        if (body_len > 0 && (size_t)body_len < sizeof(request->body)) {
             strncpy(request->body, body_start, body_len);
             request->body[body_len] = '\0';
             printf("解析到请求体: %s\n", request->body);

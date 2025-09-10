@@ -95,7 +95,7 @@ void api_get_sensors(http_request_t *request, http_response_t *response) {
 // API: 控制RGB LED
 void api_control_rgb(http_request_t *request, http_response_t *response) {
     printf("API请求: %s %s\n", request->method, request->path);
-    printf("请求体: %s\n", request->body ? request->body : "(empty)");
+    printf("请求体: %s\n", strlen(request->body) > 0 ? request->body : "(empty)");
     
     cJSON *json = cJSON_CreateObject();
     
@@ -499,14 +499,8 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
         cJSON_AddBoolToObject(camera_info, "available", camera_is_available());
         cJSON_AddBoolToObject(camera_info, "streaming", state.stream_running);
         cJSON_AddNumberToObject(camera_info, "frame_count", state.frame_count);
-        cJSON_AddNumberToObject(camera_info, "last_frame_time", state.last_frame_time);
         
-        cJSON *config = cJSON_CreateObject();
-        cJSON_AddNumberToObject(config, "width", state.config.width);
-        cJSON_AddNumberToObject(config, "height", state.config.height);
-        cJSON_AddNumberToObject(config, "fps", state.config.fps);
-        cJSON_AddNumberToObject(config, "quality", state.config.quality);
-        cJSON_AddItemToObject(camera_info, "config", config);
+        cJSON_AddItemToObject(json, "camera", camera_info);
         
         cJSON_AddItemToObject(json, "camera", camera_info);
     } else {
