@@ -4,7 +4,6 @@ const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 // 全局状态
 let autoRefresh = false;
 let autoRefreshInterval = null;
-let currentServoAngle = 90;
 let cameraStreamActive = false;
 let cameraPreviewUpdateInterval = null;
 
@@ -25,10 +24,6 @@ const elements = {
     beepMedium: document.getElementById('beep-medium'),
     beepLong: document.getElementById('beep-long'),
     beepCustom: document.getElementById('beep-custom'),
-    servoAngle: document.getElementById('servo-angle'),
-    angleDisplay: document.getElementById('angle-display'),
-    servoSet: document.getElementById('servo-set'),
-    servoCurrentAngle: document.getElementById('servo-current-angle'),
     serverStatus: document.getElementById('server-status'),
     lastSensorUpdate: document.getElementById('last-sensor-update'),
     connectionLatency: document.getElementById('connection-latency'),
@@ -170,13 +165,6 @@ class ApiClient {
         });
     }
 
-    static async controlServo(angle) {
-        return await this.request('/api/servo', {
-            method: 'POST',
-            body: JSON.stringify({ angle: angle })
-        });
-    }
-
     static async controlMotion(direction, speed) {
         return await this.request('/api/motion', {
             method: 'POST',
@@ -283,27 +271,6 @@ class BeepController {
         } catch (error) {
             console.error('蜂鸣器控制失败:', error);
             Utils.showNotification('蜂鸣器控制失败', 'error');
-        } finally {
-            Utils.hideLoading();
-        }
-    }
-}
-
-// 舵机控制
-class ServoController {
-    static async setAngle(angle) {
-        try {
-            Utils.showLoading();
-            const result = await ApiClient.controlServo(angle);
-            
-            if (result.status === 'success') {
-                currentServoAngle = angle;
-                elements.servoCurrentAngle.textContent = `${angle}°`;
-                Utils.showNotification(`舵机角度已设置为${angle}°`, 'success');
-            }
-        } catch (error) {
-            console.error('舵机控制失败:', error);
-            Utils.showNotification('舵机控制失败', 'error');
         } finally {
             Utils.hideLoading();
         }
@@ -489,24 +456,6 @@ function setupEventListeners() {
     elements.beepCustom.addEventListener('click', () => {
         const duration = parseInt(elements.beepDuration.value);
         BeepController.beep(duration);
-    });
-
-    // 舵机控制
-    elements.servoAngle.addEventListener('input', (e) => {
-        elements.angleDisplay.textContent = `${e.target.value}°`;
-    });
-
-    document.querySelectorAll('.servo-preset').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const angle = parseInt(e.target.dataset.angle);
-            elements.servoAngle.value = angle;
-            elements.angleDisplay.textContent = `${angle}°`;
-        });
-    });
-
-    elements.servoSet.addEventListener('click', () => {
-        const angle = parseInt(elements.servoAngle.value);
-        ServoController.setAngle(angle);
     });
 
     // 系统控制

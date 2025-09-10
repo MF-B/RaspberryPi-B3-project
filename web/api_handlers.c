@@ -1,7 +1,6 @@
 #include "http_server.h"
 #include "../components/beep.h"
 #include "../components/rgb.h"
-#include "../components/servo.h"
 #include "../components/temp.h"
 #include "../components/distance.h"
 #include "../components/clock.h"
@@ -19,13 +18,12 @@ void api_get_status(http_request_t *request, http_response_t *response) {
     cJSON *components = cJSON_CreateObject();
     
     // 组件状态
-    cJSON_AddStringToObject(components, "rgb", "ready");
     cJSON_AddStringToObject(components, "beep", "ready");
-    cJSON_AddStringToObject(components, "servo", "ready");
-    cJSON_AddStringToObject(components, "dht11", "ready");
-    cJSON_AddStringToObject(components, "ultrasonic", "ready");
+    cJSON_AddStringToObject(components, "rgb", "ready");
+    cJSON_AddStringToObject(components, "temp", "ready");
+    cJSON_AddStringToObject(components, "distance", "ready");
     cJSON_AddStringToObject(components, "clock", "ready");
-    cJSON_AddStringToObject(components, "motion", "ready");  // 新增运动控制
+    cJSON_AddStringToObject(components, "control", "ready");  // 新增运动控制
     cJSON_AddStringToObject(components, "camera", camera_is_available() ? "ready" : "unavailable");  // 新增摄像头
     
     cJSON_AddItemToObject(json, "status", status);
@@ -219,52 +217,6 @@ void api_control_beep(http_request_t *request, http_response_t *response) {
             cJSON_Delete(post_json);
             return;
         }
-        
-        cJSON_Delete(post_json);
-    } else {
-        create_error_response(response, 405, "Method Not Allowed");
-        cJSON_Delete(json);
-        return;
-    }
-    
-    char *json_string = cJSON_Print(json);
-    create_json_response(response, json_string);
-    
-    free(json_string);
-    cJSON_Delete(json);
-}
-
-// API: 控制舵机
-void api_control_servo(http_request_t *request, http_response_t *response) {
-    cJSON *json = cJSON_CreateObject();
-    
-    if (strcmp(request->method, "POST") == 0) {
-        cJSON *post_json = cJSON_Parse(request->body);
-        if (!post_json) {
-            create_error_response(response, 400, "Invalid JSON");
-            return;
-        }
-        
-        cJSON *angle_json = cJSON_GetObjectItem(post_json, "angle");
-        if (!angle_json || !cJSON_IsNumber(angle_json)) {
-            create_error_response(response, 400, "Missing angle parameter");
-            cJSON_Delete(post_json);
-            return;
-        }
-        
-        int angle = (int)cJSON_GetNumberValue(angle_json);
-        
-        if (angle < 0 || angle > 180) {
-            create_error_response(response, 400, "Angle must be between 0 and 180");
-            cJSON_Delete(post_json);
-            return;
-        }
-        
-        servo_set_angle(angle);
-        
-        cJSON_AddStringToObject(json, "status", "success");
-        cJSON_AddStringToObject(json, "message", "Servo angle set");
-        cJSON_AddNumberToObject(json, "angle", angle);
         
         cJSON_Delete(post_json);
     } else {

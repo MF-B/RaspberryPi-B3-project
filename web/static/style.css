@@ -272,73 +272,6 @@ body {
     flex-wrap: wrap;
 }
 
-/* 舵机控制面板 */
-.servo-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.angle-control {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.angle-control input[type="range"] {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: #ddd;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.angle-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #9b59b6;
-    cursor: pointer;
-}
-
-#angle-display {
-    font-weight: 600;
-    color: #9b59b6;
-}
-
-.servo-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.servo-preset {
-    padding: 8px 16px;
-    border: 2px solid #9b59b6;
-    background: transparent;
-    color: #9b59b6;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.servo-preset:hover {
-    background: #9b59b6;
-    color: white;
-}
-
-.servo-status {
-    margin-top: 15px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
 /* 系统状态面板 */
 .system-info {
     display: flex;
@@ -569,7 +502,6 @@ body {
 
     .color-buttons,
     .beep-buttons,
-    .servo-buttons,
     .system-controls {
         flex-direction: column;
     }

@@ -12,7 +12,6 @@
 |------|------|------|
 | 蜂鸣器 | `beep_` | `beep_init()` |
 | RGB LED | `rgb_` | `rgb_init()` |
-| 舵机 | `servo_` | `servo_init()` |
 | 距离传感器 | `distance_` | `distance_init()` |
 | 温度传感器 | `temp_` | `temp_init()` |
 | 按钮 | `button_` | `button_init()` |

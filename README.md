@@ -48,7 +48,6 @@ RaspberryPi-B3-project/
 │   ├── rgb.c/.h        # RGB LED控制
 │   ├── temp.c/.h       # 温度传感器
 │   ├── distance.c/.h   # 距离传感器
-│   ├── servo.c/.h      # 舵机控制
 │   ├── control.c/.h    # 运动控制
 │   └── camera.cpp/.h   # 摄像头控制
 └── README.md           # 项目说明文档
@@ -200,10 +199,11 @@ GET /api/status
   "components": {
     "rgb": "ready",
     "beep": "ready",
-    "servo": "ready",
-    "dht11": "ready",
-    "ultrasonic": "ready",
-    "clock": "ready"
+    "temp": "ready",
+    "distance": "ready",
+    "clock": "ready",
+    "control": "ready",
+    "camera": "ready"
   }
 }
 ```
@@ -261,17 +261,7 @@ Content-Type: application/json
 }
 ```
 
-#### 5. 控制舵机
-```http
-POST /api/servo
-Content-Type: application/json
-
-{
-  "angle": 90  // 0-180度
-}
-```
-
-#### 6. 获取距离数据
+#### 5. 获取距离数据
 ```http
 GET /api/distance
 ```
@@ -292,9 +282,6 @@ curl -X POST -H "Content-Type: application/json" \
      http://localhost:8080/api/beep
 
 # 控制舵机
-curl -X POST -H "Content-Type: application/json" \
-     -d '{"angle":45}' \
-     http://localhost:8080/api/servo
 ```
 gpio -v
 ```

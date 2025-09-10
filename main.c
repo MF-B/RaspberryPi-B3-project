@@ -11,7 +11,6 @@
 #include "components/rgb.h"
 #include "components/temp.h"
 #include "components/distance.h"
-#include "components/servo.h"
 #include "components/control.h"  // 新增运动控制
 #include "components/camera.h"   // 新增摄像头
 
@@ -85,8 +84,8 @@ int main(void) {
                 printf("2. GET  /api/sensors    - 获取传感器数据\n");
                 printf("3. POST /api/rgb        - 控制RGB LED\n");
                 printf("4. POST /api/beep       - 控制蜂鸣器\n");
-                printf("5. POST /api/servo      - 控制舵机\n");
-                printf("6. GET  /api/distance   - 获取距离数据\n\n");
+                printf("5. GET  /api/distance   - 获取距离数据\n");
+                printf("6. POST /api/camera     - 控制摄像头\n\n");
                 
                 printf("使用示例:\n");
                 printf("curl -X GET http://localhost:8080/api/status\n");
@@ -181,15 +180,11 @@ void init_all_components(void) {
     temp_init();
     printf(" 完成\n");
     
-    printf("7. 初始化舵机...");
-    servo_init();
-    printf(" 完成\n");
-    
-    printf("8. 初始化运动控制...");
+    printf("7. 初始化运动控制...");
     init_wheel();  // 新增运动控制初始化
     printf(" 完成\n");
     
-    printf("9. 启动摄像头服务...");
+    printf("8. 启动摄像头服务...");
     // 启动摄像头守护进程
     system("./camera_service.sh start > /dev/null 2>&1");
     // 等待服务启动
@@ -205,7 +200,6 @@ void cleanup_all_components(void) {
     beep_off();
     rgb_cleanup();
     clock_cleanup();
-    servo_cleanup();
     clean_wheel();  // 新增运动控制清理
     camera_cleanup();   // 新增摄像头清理
     // 停止摄像头守护进程

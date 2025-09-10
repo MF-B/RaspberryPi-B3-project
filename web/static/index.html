@@ -124,32 +124,6 @@
                 </div>
             </section>
 
-            <!-- 舵机控制面板 -->
-            <section class="card servo-panel">
-                <h2><i class="fas fa-cog"></i> 舵机控制</h2>
-                <div class="servo-controls">
-                    <div class="angle-control">
-                        <label for="servo-angle">角度 (0° - 180°):</label>
-                        <input type="range" id="servo-angle" min="0" max="180" value="90" step="1">
-                        <span id="angle-display">90°</span>
-                    </div>
-                    <div class="servo-buttons">
-                        <button class="servo-preset" data-angle="0">0°</button>
-                        <button class="servo-preset" data-angle="45">45°</button>
-                        <button class="servo-preset" data-angle="90">90°</button>
-                        <button class="servo-preset" data-angle="135">135°</button>
-                        <button class="servo-preset" data-angle="180">180°</button>
-                    </div>
-                    <button id="servo-set" class="btn btn-primary">
-                        <i class="fas fa-play"></i> 设置角度
-                    </button>
-                </div>
-                <div class="servo-status">
-                    <span>当前角度: </span>
-                    <span id="servo-current-angle">90°</span>
-                </div>
-            </section>
-
             <!-- 运动控制面板 -->
             <section class="card motion-panel">
                 <h2><i class="fas fa-gamepad"></i> 运动控制</h2>

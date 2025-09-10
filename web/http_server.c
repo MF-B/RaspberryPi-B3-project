@@ -1,7 +1,6 @@
 #include "http_server.h"
 #include "../components/beep.h"
 #include "../components/rgb.h"
-#include "../components/servo.h"
 #include "../components/temp.h"
 #include "../components/distance.h"
 #include "../components/clock.h"
@@ -231,8 +230,6 @@ void handle_api_request(http_request_t *request, http_response_t *response) {
         api_control_rgb(request, response);
     } else if (strcmp(request->path, "/api/beep") == 0) {
         api_control_beep(request, response);
-    } else if (strcmp(request->path, "/api/servo") == 0) {
-        api_control_servo(request, response);
     } else if (strcmp(request->path, "/api/distance") == 0) {
         api_get_distance(request, response);
     } else if (strcmp(request->path, "/api/motion") == 0) {
