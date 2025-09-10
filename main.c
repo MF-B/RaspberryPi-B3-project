@@ -137,7 +137,7 @@ int init_all_components(void) {
     log_info("温度传感器模块初始化成功");
     
     log_info("[7/8] 初始化运动控制模块...");
-    wheel_init();  // 运动控制初始化
+    init_wheel();  // 运动控制初始化
     log_info("运动控制模块初始化成功");
     
     log_info("[8/8] 启动摄像头服务...");
@@ -180,7 +180,7 @@ void cleanup_all_components(void) {
     log_info("时钟显示清理完成");
     
     log_info("清理运动控制模块...");
-    wheel_cleanup();  
+    clean_wheel();  
     log_info("运动控制模块清理完成");
     
     log_info("清理摄像头模块...");

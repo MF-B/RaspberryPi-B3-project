@@ -1,5 +1,5 @@
 #include "beep.h"
-#include "../log.h"
+#include "log.h"
 
 // 初始化蜂鸣器
 void beep_init(void)

@@ -1,5 +1,5 @@
 #include "button.h"
-#include "../log.h"
+#include "log.h"
 
 // 初始化按键
 void button_init(void)

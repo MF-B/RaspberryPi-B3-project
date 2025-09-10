@@ -1,5 +1,5 @@
 #include "rgb.h"
-#include "../log.h"
+#include "log.h"
 
 // 初始化RGB LED
 void rgb_init(void)
