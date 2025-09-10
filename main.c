@@ -41,7 +41,7 @@ int main(void) {
     init_all_components();
     
     printf("系统初始化完成!\n");
-    sleep(1);
+    delay(1000);
     
     while (1) {
         system("clear");
@@ -188,7 +188,7 @@ void init_all_components(void) {
     // 启动摄像头守护进程
     system("./camera_service.sh start > /dev/null 2>&1");
     // 等待服务启动
-    sleep(2);
+    delay(2000);
     camera_init();   // 初始化摄像头模块
     printf(" 完成\n");
     

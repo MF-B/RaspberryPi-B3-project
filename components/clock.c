@@ -50,40 +50,40 @@ static void clock_data_display(char *data);
 static void clock_start()
 {
     digitalWrite(CLOCK_CLK_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_DIO_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_DIO_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_CLK_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
 }
 
 // TM1637停止信号
 static void clock_stop()
 {
     digitalWrite(CLOCK_CLK_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_DIO_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_CLK_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_DIO_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
 }
 
 // 写入一个位
 static void clock_write_bit(char bit)
 {
     digitalWrite(CLOCK_CLK_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     if (bit)
         digitalWrite(CLOCK_DIO_PIN, 1);
     else
         digitalWrite(CLOCK_DIO_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     digitalWrite(CLOCK_CLK_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
 }
 
 // 写入一个字节
@@ -97,10 +97,10 @@ static void clock_write_byte(char data)
     
     // 等待ACK
     digitalWrite(CLOCK_CLK_PIN, 0);
-    usleep(140);
+    delayMicroseconds(140);
     pinMode(CLOCK_DIO_PIN, INPUT);
     digitalWrite(CLOCK_CLK_PIN, 1);
-    usleep(140);
+    delayMicroseconds(140);
     pinMode(CLOCK_DIO_PIN, OUTPUT);
 }
 
