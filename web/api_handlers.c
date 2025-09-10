@@ -459,21 +459,6 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
                 cJSON_AddStringToObject(json, "status", "error");
                 cJSON_AddStringToObject(json, "message", "Failed to take snapshot");
             }
-        } else if (strcmp(action_str, "start_stream") == 0) {
-            printf("启动视频流\n");
-            if (camera_start_stream() == 0) {
-                cJSON_AddStringToObject(json, "status", "success");
-                cJSON_AddStringToObject(json, "message", "Stream started");
-                cJSON_AddStringToObject(json, "stream_url", "/images/stream.jpg");
-            } else {
-                cJSON_AddStringToObject(json, "status", "error");
-                cJSON_AddStringToObject(json, "message", "Failed to start stream");
-            }
-        } else if (strcmp(action_str, "stop_stream") == 0) {
-            printf("停止视频流\n");
-            camera_stop_stream();
-            cJSON_AddStringToObject(json, "status", "success");
-            cJSON_AddStringToObject(json, "message", "Stream stopped");
         } else {
             printf("无效的动作: %s\n", action_str);
             create_error_response(response, 400, "Invalid action");

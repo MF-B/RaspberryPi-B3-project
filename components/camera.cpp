@@ -1,6 +1,7 @@
 #include "camera.h"
 #include <opencv2/opencv.hpp>
 #include <sys/stat.h>
+#include <string.h>
 
 using namespace cv;
 
@@ -20,8 +21,9 @@ static void ensure_output_directory() {
     }
 }
 
+// 初始化摄像头
 int camera_init(void) {
-    printf("初始化摄像头...\n");
+    printf("摄像头初始化开始...\n");
     
     ensure_output_directory();
     
@@ -29,6 +31,7 @@ int camera_init(void) {
     g_camera.open(0);
     if (!g_camera.isOpened()) {
         printf("错误: 无法打开摄像头\n");
+        g_camera_state.status = CAMERA_STATUS_ERROR;
         return -1;
     }
     
@@ -41,10 +44,11 @@ int camera_init(void) {
     g_camera_state.frame_count = 0;
     g_camera_state.stream_running = 0;
     
-    printf("摄像头初始化成功\n");
+    printf("摄像头初始化完成\n");
     return 0;
 }
 
+// 拍摄快照
 int camera_take_snapshot(void) {
     if (!g_camera_initialized) {
         if (camera_init() != 0) {
@@ -68,57 +72,27 @@ int camera_take_snapshot(void) {
     }
 }
 
-int camera_start_stream(void) {
-    if (!g_camera_initialized) {
-        if (camera_init() != 0) {
-            return -1;
-        }
-    }
-    
-    g_camera_state.stream_running = 1;
-    printf("视频流已启动\n");
-    return 0;
-}
-
-int camera_stop_stream(void) {
-    g_camera_state.stream_running = 0;
-    printf("视频流已停止\n");
-    return 0;
-}
-
-void camera_cleanup(void) {
-    if (g_camera_initialized) {
-        g_camera.release();
-        g_camera_initialized = false;
-    }
-    g_camera_state = {CAMERA_STATUS_STOPPED, 0, 0};
-    printf("摄像头资源清理完成\n");
-}
-
-camera_state_t camera_get_state(void) {
-    return g_camera_state;
-}
-
+// 检查摄像头是否可用
 int camera_is_available(void) {
     return g_camera_initialized && g_camera.isOpened();
 }
 
-// 用于Web流的快照更新
-int camera_update_stream_snapshot(void) {
-    if (!g_camera_state.stream_running || !g_camera_initialized) {
-        return -1;
+// 获取摄像头状态
+camera_state_t camera_get_state(void) {
+    return g_camera_state;
+}
+
+// 清理摄像头资源
+void camera_cleanup(void) {
+    printf("摄像头组件清理中...\n");
+    
+    if (g_camera_initialized) {
+        g_camera.release();
+        g_camera_initialized = false;
     }
     
-    Mat frame;
-    if (!g_camera.read(frame) || frame.empty()) {
-        return -1;
-    }
-    
-    if (imwrite("web/static/images/stream.jpg", frame)) {
-        g_camera_state.frame_count++;
-        return 0;
-    }
-    return -1;
+    g_camera_state = {CAMERA_STATUS_STOPPED, 0, 0};
+    printf("摄像头组件清理完成\n");
 }
 
 } // extern "C"
