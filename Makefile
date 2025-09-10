@@ -8,7 +8,7 @@ INCLUDES = -Icomponents -Iweb `pkg-config --cflags opencv4`
 
 # 源文件
 C_SRCS = main.c \
-         components/button.c components/clock.c components/beep.c components/rgb.c components/temp.c components/distance.c components/servo.c components/control.c \
+         components/button.c components/clock.c components/beep.c components/rgb.c components/temp.c components/distance.c components/control.c \
          web/http_server.c web/api_handlers.c
 
 CXX_SRCS = components/camera.cpp
