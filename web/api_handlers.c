@@ -438,10 +438,7 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
         }
         cJSON_AddStringToObject(camera_info, "status", status_str);
         cJSON_AddBoolToObject(camera_info, "available", camera_is_available());
-        cJSON_AddBoolToObject(camera_info, "streaming", state.stream_running);
         cJSON_AddNumberToObject(camera_info, "frame_count", state.frame_count);
-        
-        cJSON_AddItemToObject(json, "camera", camera_info);
         
         cJSON_AddItemToObject(json, "camera", camera_info);
     } else {

@@ -4,8 +4,6 @@ const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 // 全局状态
 let autoRefresh = false;
 let autoRefreshInterval = null;
-let cameraStreamActive = false;
-let cameraPreviewUpdateInterval = null;
 
 // DOM元素
 const elements = {
@@ -47,8 +45,6 @@ const elements = {
     // 摄像头元素
     cameraPreview: document.getElementById('camera-preview'),
     cameraSnapshot: document.getElementById('camera-snapshot'),
-    cameraStartStream: document.getElementById('camera-start-stream'),
-    cameraStopStream: document.getElementById('camera-stop-stream'),
     cameraStatus: document.getElementById('camera-status'),
     cameraResolution: document.getElementById('camera-resolution'),
     cameraFrameCount: document.getElementById('camera-frame-count'),
@@ -507,19 +503,7 @@ function setupEventListeners() {
     // 摄像头控制事件
     if (elements.cameraSnapshot) {
         elements.cameraSnapshot.addEventListener('click', () => {
-            Camera.takeSnapshot();
-        });
-    }
-
-    if (elements.cameraStartStream) {
-        elements.cameraStartStream.addEventListener('click', () => {
-            Camera.startStream();
-        });
-    }
-
-    if (elements.cameraStopStream) {
-        elements.cameraStopStream.addEventListener('click', () => {
-            Camera.stopStream();
+            CameraController.takeSnapshot();
         });
     }
 
@@ -608,7 +592,7 @@ async function initializeApp() {
         }
         
         // 获取摄像头状态
-        await Camera.getStatus();
+        await CameraController.getStatus();
         
         Utils.showNotification('系统初始化完成', 'success');
     } catch (error) {
@@ -646,10 +630,9 @@ window.addEventListener('offline', () => {
     Utils.showNotification('网络连接已断开', 'error');
 });
 
-// 摄像头控制模块
-const Camera = {
-    // 拍照
-    async takeSnapshot() {
+// 摄像头控制
+class CameraController {
+    static async takeSnapshot() {
         console.log('开始执行拍照功能...');
         try {
             Utils.showLoading();
@@ -686,107 +669,9 @@ const Camera = {
         } finally {
             Utils.hideLoading();
         }
-    },
+    }
 
-    // 开始视频流
-    async startStream() {
-        try {
-            Utils.showLoading();
-            
-            const response = await fetch(`${API_BASE_URL}/api/camera`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    action: "start_stream"
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.status === "success") {
-                cameraStreamActive = true;
-                this.updateStreamButtons();
-                this.startPreviewUpdate();
-                Utils.showNotification("视频流已开始", "success");
-            } else {
-                Utils.showNotification(`启动视频流失败: ${data.message}`, "error");
-            }
-        } catch (error) {
-            console.error("启动视频流失败:", error);
-            Utils.showNotification("启动视频流失败，请检查网络连接", "error");
-        } finally {
-            Utils.hideLoading();
-        }
-    },
-
-    // 停止视频流
-    async stopStream() {
-        try {
-            Utils.showLoading();
-            
-            const response = await fetch(`${API_BASE_URL}/api/camera`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    action: "stop_stream"
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.status === "success") {
-                cameraStreamActive = false;
-                this.updateStreamButtons();
-                this.stopPreviewUpdate();
-                Utils.showNotification("视频流已停止", "success");
-            } else {
-                Utils.showNotification(`停止视频流失败: ${data.message}`, "error");
-            }
-        } catch (error) {
-            console.error("停止视频流失败:", error);
-            Utils.showNotification("停止视频流失败，请检查网络连接", "error");
-        } finally {
-            Utils.hideLoading();
-        }
-    },
-
-    // 更新流按钮状态
-    updateStreamButtons() {
-        if (elements.cameraStartStream && elements.cameraStopStream) {
-            elements.cameraStartStream.disabled = cameraStreamActive;
-            elements.cameraStopStream.disabled = !cameraStreamActive;
-        }
-    },
-
-    // 开始预览更新
-    startPreviewUpdate() {
-        if (cameraPreviewUpdateInterval) {
-            clearInterval(cameraPreviewUpdateInterval);
-        }
-        
-        cameraPreviewUpdateInterval = setInterval(() => {
-            if (elements.cameraPreview && cameraStreamActive) {
-                elements.cameraPreview.src = `${API_BASE_URL}/static/images/stream.jpg?t=${Date.now()}`;
-                elements.cameraPreview.style.display = "block";
-                elements.previewPlaceholder.style.display = "none";
-            }
-        }, 500); // 每0.5秒更新一次
-    },
-
-    // 停止预览更新
-    stopPreviewUpdate() {
-        if (cameraPreviewUpdateInterval) {
-            clearInterval(cameraPreviewUpdateInterval);
-            cameraPreviewUpdateInterval = null;
-        }
-    },
-
-    // 获取摄像头状态
-    async getStatus() {
+    static async getStatus() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/camera`);
             const data = await response.json();
@@ -804,18 +689,6 @@ const Camera = {
                 if (elements.cameraFrameCount) {
                     elements.cameraFrameCount.textContent = data.camera.frame_count || "0";
                 }
-                
-                // 更新流状态
-                if (data.camera.streaming !== undefined) {
-                    cameraStreamActive = data.camera.streaming;
-                    this.updateStreamButtons();
-                    
-                    if (cameraStreamActive) {
-                        this.startPreviewUpdate();
-                    } else {
-                        this.stopPreviewUpdate();
-                    }
-                }
             }
             return data;
         } catch (error) {
@@ -823,4 +696,4 @@ const Camera = {
             return null;
         }
     }
-};
+}
