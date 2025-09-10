@@ -4,7 +4,7 @@
 #include "../components/temp.h"
 #include "../components/distance.h"
 #include "../components/clock.h"
-#include "../log.h"  // log.c 日志库
+#include "log.h"  // log.c 日志库
 #include <signal.h>
 #include <cjson/cJSON.h>
 

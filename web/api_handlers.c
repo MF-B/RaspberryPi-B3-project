@@ -6,7 +6,7 @@
 #include "../components/clock.h"
 #include "../components/control.h"  // 新增运动控制
 #include "../components/camera.h"   // 新增摄像头
-#include "../log.h"  // log.c 日志库
+#include "log.h"  // log.c 日志库
 #include <cjson/cJSON.h>
 
 // API: 获取系统状态
