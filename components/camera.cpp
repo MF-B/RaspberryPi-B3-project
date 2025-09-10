@@ -6,12 +6,13 @@ using namespace cv;
 
 // 全局变量
 static VideoCapture g_camera;
-static camera_state_t g_camera_state = {0};
+static camera_state_t g_camera_state = {CAMERA_STATUS_STOPPED, 0, 0};
 static bool g_camera_initialized = false;
 
 // 确保输出目录存在
 static void ensure_output_directory() {
-    struct stat st = {0};
+    struct stat st;
+    memset(&st, 0, sizeof(st));
     if (stat("web/static/images", &st) == -1) {
         system("mkdir -p web/static/images");
     }
@@ -88,7 +89,7 @@ void camera_cleanup(void) {
         g_camera.release();
         g_camera_initialized = false;
     }
-    memset(&g_camera_state, 0, sizeof(g_camera_state));
+    g_camera_state = {CAMERA_STATUS_STOPPED, 0, 0};
     printf("摄像头资源清理完成\n");
 }
 
