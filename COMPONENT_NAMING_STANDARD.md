@@ -72,16 +72,26 @@ void rgb_set_color(int r, int g, int b);  // 设置颜色
 void rgb_cleanup(void);        // 清理资源
 ```
 
-### 3.3 舵机组件 (servo)
+### 3.3 温度传感器组件 (temp)
 ```c
 // 核心函数  
-void servo_init(void);         // 初始化舵机
-void servo_start(void);        // 启动舵机
-void servo_stop(void);         // 停止舵机
+void temp_init(void);          // 初始化温度传感器
+int temp_read(temp_data_t *data);          // 读取数据
+int temp_read_with_retry(temp_data_t *data, int max_retry);  // 带重试读取
+```
 
-// 扩展函数
-void servo_set_angle(int angle);  // 设置角度
-void servo_cleanup(void);      // 清理资源
+### 3.4 距离传感器组件 (distance)
+```c
+// 核心函数  
+void distance_init(void);      // 初始化距离传感器
+int distance_read(void);       // 读取距离数据
+```
+
+### 3.5 按钮组件 (button)
+```c
+// 核心函数
+void button_init(void);        // 初始化按钮
+int button_is_pressed(void);   // 检查按钮状态
 ```
 
 ## 4. 文件组织规范
@@ -153,3 +163,7 @@ void <component>_off(void)
 ## 6. 版本历史
 
 - v1.0 (2025-09-10): 初始版本，基于beep组件重构经验制定
+- v2.0 (2025-09-10): 统一组件命名，删除combo文件夹，简化命名规范
+  - 重命名：DHT → temp，usonic → distance，botton → button
+  - 移除所有兼容性代码，使用统一命名规范
+  - 删除combo文件夹，保持项目结构简洁
