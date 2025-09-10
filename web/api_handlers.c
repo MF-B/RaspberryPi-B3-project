@@ -2,8 +2,8 @@
 #include "../components/beep.h"
 #include "../components/rgb.h"
 #include "../components/servo.h"
-#include "../components/DHT.h"
-#include "../components/usonic.h"
+#include "../components/temp.h"
+#include "../components/distance.h"
 #include "../components/clock.h"
 #include "../components/control.h"  // 新增运动控制
 #include "../components/camera.h"   // 新增摄像头
@@ -48,29 +48,29 @@ void api_get_sensors(http_request_t *request, http_response_t *response) {
     cJSON *json = cJSON_CreateObject();
     cJSON *sensors = cJSON_CreateObject();
     
-    // DHT11温湿度数据 - 使用更短的超时时间避免阻塞
-    DHT11_Data dht_data;
-    printf("开始读取DHT11传感器数据...\n");
-    int dht_result = dht11_read_with_retry(&dht_data, 1); // 只重试1次，减少阻塞时间
-    printf("DHT11读取结果: %d\n", dht_result);
+    // 温度传感器数据 - 使用更短的超时时间避免阻塞
+    temp_data_t sensor_data;
+    printf("开始读取温度传感器数据...\n");
+    int sensor_result = temp_read_with_retry(&sensor_data, 1); // 只重试1次，减少阻塞时间
+    printf("温度传感器读取结果: %d\n", sensor_result);
     
     cJSON *dht = cJSON_CreateObject();
-    if (dht_result == DHT_SUCCESS) {
-        printf("DHT11读取成功: 温度=%.1f°C, 湿度=%.1f%%\n", 
-               dht_data.temperature, dht_data.humidity);
-        cJSON_AddNumberToObject(dht, "temperature", dht_data.temperature);
-        cJSON_AddNumberToObject(dht, "humidity", dht_data.humidity);
+    if (sensor_result == TEMP_SUCCESS) {
+        printf("温度传感器读取成功: 温度=%.1f°C, 湿度=%.1f%%\n", 
+               sensor_data.temperature, sensor_data.humidity);
+        cJSON_AddNumberToObject(dht, "temperature", sensor_data.temperature);
+        cJSON_AddNumberToObject(dht, "humidity", sensor_data.humidity);
         cJSON_AddStringToObject(dht, "status", "success");
     } else {
-        printf("DHT11读取失败，错误码: %d\n", dht_result);
+        printf("温度传感器读取失败，错误码: %d\n", sensor_result);
         cJSON_AddNumberToObject(dht, "temperature", 0);
         cJSON_AddNumberToObject(dht, "humidity", 0);
         cJSON_AddStringToObject(dht, "status", "error");
     }
     cJSON_AddItemToObject(sensors, "dht11", dht);
     
-    // 超声波距离数据
-    int distance = read_dist();
+    // 距离传感器数据
+    int distance = distance_read();
     cJSON *ultrasonic = cJSON_CreateObject();
     if (distance > 0) {
         cJSON_AddNumberToObject(ultrasonic, "distance", distance);
@@ -286,7 +286,7 @@ void api_get_distance(http_request_t *request, http_response_t *response) {
     
     cJSON *json = cJSON_CreateObject();
     
-    int distance = read_dist();
+    int distance = distance_read();
     
     if (distance > 0) {
         cJSON_AddStringToObject(json, "status", "success");

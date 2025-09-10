@@ -43,11 +43,11 @@ RaspberryPi-B3-project/
 │       └── script.js   # 前端JavaScript
 ├── components/         # 硬件组件模块
 │   ├── beep.c/.h       # 蜂鸣器控制
-│   ├── botton.c/.h     # 按钮控制
+│   ├── button.c/.h     # 按钮控制
 │   ├── clock.c/.h      # TM1637数码管
 │   ├── rgb.c/.h        # RGB LED控制
-│   ├── DHT.c/.h        # 温湿度传感器
-│   ├── usonic.c/.h     # 超声波传感器
+│   ├── temp.c/.h       # 温度传感器
+│   ├── distance.c/.h   # 距离传感器
 │   ├── servo.c/.h      # 舵机控制
 │   ├── control.c/.h    # 运动控制
 │   └── camera.cpp/.h   # 摄像头控制

@@ -6,11 +6,11 @@
 #include <wiringPi.h>
 #include "web/http_server.h"
 #include "components/beep.h"
-#include "components/botton.h"
+#include "components/button.h"
 #include "components/clock.h"
 #include "components/rgb.h"
-#include "components/DHT.h"
-#include "components/usonic.h"
+#include "components/temp.h"
+#include "components/distance.h"
 #include "components/servo.h"
 #include "components/control.h"  // 新增运动控制
 #include "components/camera.h"   // 新增摄像头
@@ -162,7 +162,7 @@ void init_all_components(void) {
     printf(" 完成\n");
     
     printf("2. 初始化按钮...");
-    botton_init();
+    button_init();
     printf(" 完成\n");
     
     printf("3. 初始化时钟显示...");
@@ -173,12 +173,12 @@ void init_all_components(void) {
     rgb_init();
     printf(" 完成\n");
     
-    printf("5. 初始化超声波传感器...");
-    usonic_init();
+    printf("5. 初始化距离传感器...");
+    distance_init();
     printf(" 完成\n");
     
-    printf("6. 初始化DHT11传感器...");
-    dht11_init();
+    printf("6. 初始化温度传感器...");
+    temp_init();
     printf(" 完成\n");
     
     printf("7. 初始化舵机...");

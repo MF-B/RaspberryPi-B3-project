@@ -2,7 +2,7 @@
 #include "../components/beep.h"
 #include "../components/rgb.h"
 #include "../components/servo.h"
-#include "../components/DHT.h"
+#include "../components/temp_sensor.h"
 #include "../components/usonic.h"
 #include "../components/clock.h"
 #include <signal.h>

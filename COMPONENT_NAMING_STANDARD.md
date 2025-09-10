@@ -13,9 +13,9 @@
 | 蜂鸣器 | `beep_` | `beep_init()` |
 | RGB LED | `rgb_` | `rgb_init()` |
 | 舵机 | `servo_` | `servo_init()` |
-| 超声波传感器 | `usonic_` | `usonic_init()` |
-| DHT11传感器 | `dht11_` | `dht11_init()` |
-| 按钮 | `botton_` | `botton_init()` |
+| 距离传感器 | `distance_` | `distance_init()` |
+| 温度传感器 | `temp_` | `temp_init()` |
+| 按钮 | `button_` | `button_init()` |
 | 时钟显示 | `tm1637_` | `tm1637_init()` |
 | 摄像头 | `camera_` | `camera_init()` |
 | 运动控制 | `wheel_` | `wheel_init()` |
