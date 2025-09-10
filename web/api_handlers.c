@@ -54,32 +54,32 @@ void api_get_sensors(http_request_t *request, http_response_t *response) {
     int sensor_result = temp_read_with_retry(&sensor_data, 1); // 只重试1次，减少阻塞时间
     printf("温度传感器读取结果: %d\n", sensor_result);
     
-    cJSON *dht = cJSON_CreateObject();
+    cJSON *temp = cJSON_CreateObject();
     if (sensor_result == TEMP_SUCCESS) {
         printf("温度传感器读取成功: 温度=%.1f°C, 湿度=%.1f%%\n", 
                sensor_data.temperature, sensor_data.humidity);
-        cJSON_AddNumberToObject(dht, "temperature", sensor_data.temperature);
-        cJSON_AddNumberToObject(dht, "humidity", sensor_data.humidity);
-        cJSON_AddStringToObject(dht, "status", "success");
+        cJSON_AddNumberToObject(temp, "temperature", sensor_data.temperature);
+        cJSON_AddNumberToObject(temp, "humidity", sensor_data.humidity);
+        cJSON_AddStringToObject(temp, "status", "success");
     } else {
         printf("温度传感器读取失败，错误码: %d\n", sensor_result);
-        cJSON_AddNumberToObject(dht, "temperature", 0);
-        cJSON_AddNumberToObject(dht, "humidity", 0);
-        cJSON_AddStringToObject(dht, "status", "error");
+        cJSON_AddNumberToObject(temp, "temperature", 0);
+        cJSON_AddNumberToObject(temp, "humidity", 0);
+        cJSON_AddStringToObject(temp, "status", "error");
     }
-    cJSON_AddItemToObject(sensors, "dht11", dht);
+    cJSON_AddItemToObject(sensors, "temp", temp);
     
     // 距离传感器数据
     int distance = distance_read();
-    cJSON *ultrasonic = cJSON_CreateObject();
+    cJSON *distance_sensor = cJSON_CreateObject();
     if (distance > 0) {
-        cJSON_AddNumberToObject(ultrasonic, "distance", distance);
-        cJSON_AddStringToObject(ultrasonic, "status", "success");
+        cJSON_AddNumberToObject(distance_sensor, "distance", distance);
+        cJSON_AddStringToObject(distance_sensor, "status", "success");
     } else {
-        cJSON_AddNumberToObject(ultrasonic, "distance", 0);
-        cJSON_AddStringToObject(ultrasonic, "status", "error");
+        cJSON_AddNumberToObject(distance_sensor, "distance", 0);
+        cJSON_AddStringToObject(distance_sensor, "status", "error");
     }
-    cJSON_AddItemToObject(sensors, "ultrasonic", ultrasonic);
+    cJSON_AddItemToObject(sensors, "distance", distance_sensor);
     
     // 时间戳
     cJSON_AddNumberToObject(json, "timestamp", time(NULL));

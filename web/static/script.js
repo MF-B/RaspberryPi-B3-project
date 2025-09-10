@@ -198,16 +198,16 @@ class SensorManager {
         try {
             const data = await ApiClient.getSensors();
             
-            if (data.sensors.dht11.status === 'success') {
-                elements.temperature.textContent = data.sensors.dht11.temperature.toFixed(1);
-                elements.humidity.textContent = data.sensors.dht11.humidity.toFixed(1);
+            if (data.sensors.temp.status === 'success') {
+                elements.temperature.textContent = data.sensors.temp.temperature.toFixed(1);
+                elements.humidity.textContent = data.sensors.temp.humidity.toFixed(1);
             } else {
                 elements.temperature.textContent = '--';
                 elements.humidity.textContent = '--';
             }
 
-            if (data.sensors.ultrasonic.status === 'success') {
-                elements.distance.textContent = data.sensors.ultrasonic.distance;
+            if (data.sensors.distance.status === 'success') {
+                elements.distance.textContent = data.sensors.distance.distance;
             } else {
                 elements.distance.textContent = '--';
             }

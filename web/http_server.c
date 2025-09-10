@@ -2,8 +2,8 @@
 #include "../components/beep.h"
 #include "../components/rgb.h"
 #include "../components/servo.h"
-#include "../components/temp_sensor.h"
-#include "../components/usonic.h"
+#include "../components/temp.h"
+#include "../components/distance.h"
 #include "../components/clock.h"
 #include <signal.h>
 #include <cjson/cJSON.h>
