@@ -504,6 +504,25 @@ function setupEventListeners() {
         });
     }
 
+    // 摄像头控制事件
+    if (elements.cameraSnapshot) {
+        elements.cameraSnapshot.addEventListener('click', () => {
+            Camera.takeSnapshot();
+        });
+    }
+
+    if (elements.cameraStartStream) {
+        elements.cameraStartStream.addEventListener('click', () => {
+            Camera.startStream();
+        });
+    }
+
+    if (elements.cameraStopStream) {
+        elements.cameraStopStream.addEventListener('click', () => {
+            Camera.stopStream();
+        });
+    }
+
     // 通知关闭
     elements.notificationClose.addEventListener('click', () => {
         Utils.hideNotification();
@@ -588,8 +607,7 @@ async function initializeApp() {
             MotionController.setSpeed(MotionController.currentSpeed);
         }
         
-        // 初始化摄像头
-        Camera.initEventListeners();
+        // 获取摄像头状态
         await Camera.getStatus();
         
         Utils.showNotification('系统初始化完成', 'success');
@@ -632,9 +650,11 @@ window.addEventListener('offline', () => {
 const Camera = {
     // 拍照
     async takeSnapshot() {
+        console.log('开始执行拍照功能...');
         try {
             Utils.showLoading();
             
+            console.log('发送拍照API请求...');
             const response = await fetch(`${API_BASE_URL}/api/camera`, {
                 method: "POST",
                 headers: {
@@ -645,7 +665,9 @@ const Camera = {
                 })
             });
 
+            console.log('收到API响应，状态码:', response.status);
             const data = await response.json();
+            console.log('API响应数据:', data);
             
             if (data.status === "success") {
                 // 更新预览图片
@@ -799,27 +821,6 @@ const Camera = {
         } catch (error) {
             console.error("获取摄像头状态失败:", error);
             return null;
-        }
-    },
-
-    // 初始化摄像头事件监听器
-    initEventListeners() {
-        if (elements.cameraSnapshot) {
-            elements.cameraSnapshot.addEventListener("click", () => {
-                this.takeSnapshot();
-            });
-        }
-
-        if (elements.cameraStartStream) {
-            elements.cameraStartStream.addEventListener("click", () => {
-                this.startStream();
-            });
-        }
-
-        if (elements.cameraStopStream) {
-            elements.cameraStopStream.addEventListener("click", () => {
-                this.stopStream();
-            });
         }
     }
 };

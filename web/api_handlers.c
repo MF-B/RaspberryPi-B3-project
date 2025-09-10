@@ -377,43 +377,46 @@ void api_control_motion(http_request_t *request, http_response_t *response) {
 
 // API: 摄像头控制
 void api_camera_control(http_request_t *request, http_response_t *response) {
-    printf("API请求: %s %s\n", request->method, request->path);
+    log_debug("API请求: %s %s", request->method, request->path);
+    log_debug("请求体: %s", strlen(request->body) > 0 ? request->body : "(empty)");
     
     cJSON *json = cJSON_CreateObject();
     
     if (strcmp(request->method, "POST") == 0) {
         // 解析POST数据
-        printf("解析摄像头控制JSON数据...\n");
+        log_debug("解析摄像头控制JSON数据...");
         cJSON *post_json = cJSON_Parse(request->body);
         if (!post_json) {
-            printf("JSON解析失败\n");
+            log_error("JSON解析失败");
             create_error_response(response, 400, "Invalid JSON");
             return;
         }
         
         cJSON *action = cJSON_GetObjectItem(post_json, "action");
         if (!action || !cJSON_IsString(action)) {
-            printf("缺少action参数\n");
+            log_error("缺少action参数");
             create_error_response(response, 400, "Missing action parameter");
             cJSON_Delete(post_json);
             return;
         }
         
         const char *action_str = cJSON_GetStringValue(action);
-        printf("执行摄像头动作: %s\n", action_str);
+        log_info("执行摄像头动作: %s", action_str);
         
         if (strcmp(action_str, "snapshot") == 0) {
-            printf("拍摄快照\n");
+            log_info("拍摄快照");
             if (camera_take_snapshot() == 0) {
+                log_info("拍摄快照成功");
                 cJSON_AddStringToObject(json, "status", "success");
                 cJSON_AddStringToObject(json, "message", "Snapshot taken");
                 cJSON_AddStringToObject(json, "image_url", "/images/snapshot.jpg");
             } else {
+                log_error("拍摄快照失败");
                 cJSON_AddStringToObject(json, "status", "error");
                 cJSON_AddStringToObject(json, "message", "Failed to take snapshot");
             }
         } else {
-            printf("无效的动作: %s\n", action_str);
+            log_warn("无效的摄像头动作: %s", action_str);
             create_error_response(response, 400, "Invalid action");
             cJSON_Delete(post_json);
             return;
