@@ -4,17 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
-
-// 摄像头配置常量
-#define CAMERA_WIDTH 640
-#define CAMERA_HEIGHT 480
-#define CAMERA_FPS 15
-#define CAMERA_QUALITY 80
-#define CAMERA_DEVICE "/dev/video0"
-#define CAMERA_SNAPSHOT_PATH "web/static/images/snapshot.jpg"
-#define CAMERA_STREAM_PATH "web/static/images/stream.jpg"
 
 // 摄像头状态枚举
 typedef enum {
@@ -23,24 +13,20 @@ typedef enum {
     CAMERA_STATUS_ERROR
 } camera_status_t;
 
-// 摄像头配置结构
-typedef struct {
-    int width;
-    int height;
-    int fps;
-    int quality;
-    char device[64];
-    int auto_exposure;
-    int brightness;
-    int contrast;
-} camera_config_t;
-
-// 摄像头状态结构
+// 简化的摄像头状态结构
 typedef struct {
     camera_status_t status;
-    camera_config_t config;
     int stream_running;
-    time_t last_frame_time;
     int frame_count;
-    char last_error[256];
 } camera_state_t;
+
+// 函数声明
+int camera_init(void);
+void camera_cleanup(void);
+int camera_take_snapshot(void);
+int camera_start_stream(void);
+int camera_stop_stream(void);
+int camera_is_available(void);
+camera_state_t camera_get_state(void);
+
+#endif // CAMERA_H

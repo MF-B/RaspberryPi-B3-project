@@ -52,11 +52,12 @@ const elements = {
     // 摄像头元素
     cameraPreview: document.getElementById('camera-preview'),
     cameraSnapshot: document.getElementById('camera-snapshot'),
-    cameraStreamBtn: document.getElementById('camera-stream-btn'),
+    cameraStartStream: document.getElementById('camera-start-stream'),
+    cameraStopStream: document.getElementById('camera-stop-stream'),
     cameraStatus: document.getElementById('camera-status'),
     cameraResolution: document.getElementById('camera-resolution'),
     cameraFrameCount: document.getElementById('camera-frame-count'),
-    previewPlaceholder: document.querySelector('.preview-placeholder')
+    previewPlaceholder: document.getElementById('camera-placeholder')
 };
 
 // 工具函数
@@ -697,10 +698,10 @@ const Camera = {
 
             const data = await response.json();
             
-            if (data.success) {
+            if (data.status === "success") {
                 // 更新预览图片
-                if (data.data.image_path) {
-                    elements.cameraPreview.src = data.data.image_path + "?t=" + Date.now();
+                if (data.image_url) {
+                    elements.cameraPreview.src = data.image_url + "?t=" + Date.now();
                     elements.cameraPreview.style.display = "block";
                     elements.previewPlaceholder.style.display = "none";
                 }
@@ -716,12 +717,10 @@ const Camera = {
         }
     },
 
-    // 开始/停止视频流
-    async toggleStream() {
+    // 开始视频流
+    async startStream() {
         try {
             Utils.showLoading();
-            
-            const action = cameraStreamActive ? "stop_stream" : "start_stream";
             
             const response = await fetch(`${API_BASE_URL}/api/camera`, {
                 method: "POST",
@@ -729,38 +728,66 @@ const Camera = {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    action: action
+                    action: "start_stream"
                 })
             });
 
             const data = await response.json();
             
-            if (data.success) {
-                cameraStreamActive = !cameraStreamActive;
-                
-                if (cameraStreamActive) {
-                    elements.cameraStreamBtn.textContent = "停止流";
-                    elements.cameraStreamBtn.classList.remove("btn-success");
-                    elements.cameraStreamBtn.classList.add("btn-danger");
-                    // 开始更新预览
-                    this.startPreviewUpdate();
-                } else {
-                    elements.cameraStreamBtn.textContent = "开始流";
-                    elements.cameraStreamBtn.classList.remove("btn-danger");
-                    elements.cameraStreamBtn.classList.add("btn-success");
-                    // 停止更新预览
-                    this.stopPreviewUpdate();
-                }
-                
-                Utils.showNotification(cameraStreamActive ? "视频流已开始" : "视频流已停止", "success");
+            if (data.status === "success") {
+                cameraStreamActive = true;
+                this.updateStreamButtons();
+                this.startPreviewUpdate();
+                Utils.showNotification("视频流已开始", "success");
             } else {
-                Utils.showNotification(`视频流控制失败: ${data.message}`, "error");
+                Utils.showNotification(`启动视频流失败: ${data.message}`, "error");
             }
         } catch (error) {
-            console.error("视频流控制失败:", error);
-            Utils.showNotification("视频流控制失败，请检查网络连接", "error");
+            console.error("启动视频流失败:", error);
+            Utils.showNotification("启动视频流失败，请检查网络连接", "error");
         } finally {
             Utils.hideLoading();
+        }
+    },
+
+    // 停止视频流
+    async stopStream() {
+        try {
+            Utils.showLoading();
+            
+            const response = await fetch(`${API_BASE_URL}/api/camera`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "stop_stream"
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.status === "success") {
+                cameraStreamActive = false;
+                this.updateStreamButtons();
+                this.stopPreviewUpdate();
+                Utils.showNotification("视频流已停止", "success");
+            } else {
+                Utils.showNotification(`停止视频流失败: ${data.message}`, "error");
+            }
+        } catch (error) {
+            console.error("停止视频流失败:", error);
+            Utils.showNotification("停止视频流失败，请检查网络连接", "error");
+        } finally {
+            Utils.hideLoading();
+        }
+    },
+
+    // 更新流按钮状态
+    updateStreamButtons() {
+        if (elements.cameraStartStream && elements.cameraStopStream) {
+            elements.cameraStartStream.disabled = cameraStreamActive;
+            elements.cameraStopStream.disabled = !cameraStreamActive;
         }
     },
 
@@ -793,26 +820,24 @@ const Camera = {
             const response = await fetch(`${API_BASE_URL}/api/camera`);
             const data = await response.json();
             
-            if (data.success && data.data) {
+            if (data.status === "success" && data.camera) {
                 // 更新状态显示
                 if (elements.cameraStatus) {
-                    elements.cameraStatus.textContent = data.data.status || "未知";
+                    elements.cameraStatus.textContent = data.camera.status || "未知";
                 }
                 if (elements.cameraResolution) {
-                    elements.cameraResolution.textContent = data.data.resolution || "640x480";
+                    const config = data.camera.config;
+                    const resolution = config ? `${config.width}x${config.height}` : "640x480";
+                    elements.cameraResolution.textContent = resolution;
                 }
                 if (elements.cameraFrameCount) {
-                    elements.cameraFrameCount.textContent = data.data.frame_count || "0";
+                    elements.cameraFrameCount.textContent = data.camera.frame_count || "0";
                 }
                 
                 // 更新流状态
-                if (data.data.streaming !== undefined) {
-                    cameraStreamActive = data.data.streaming;
-                    if (elements.cameraStreamBtn) {
-                        elements.cameraStreamBtn.textContent = cameraStreamActive ? "停止流" : "开始流";
-                        elements.cameraStreamBtn.classList.toggle("btn-danger", cameraStreamActive);
-                        elements.cameraStreamBtn.classList.toggle("btn-success", !cameraStreamActive);
-                    }
+                if (data.camera.streaming !== undefined) {
+                    cameraStreamActive = data.camera.streaming;
+                    this.updateStreamButtons();
                     
                     if (cameraStreamActive) {
                         this.startPreviewUpdate();
@@ -836,9 +861,15 @@ const Camera = {
             });
         }
 
-        if (elements.cameraStreamBtn) {
-            elements.cameraStreamBtn.addEventListener("click", () => {
-                this.toggleStream();
+        if (elements.cameraStartStream) {
+            elements.cameraStartStream.addEventListener("click", () => {
+                this.startStream();
+            });
+        }
+
+        if (elements.cameraStopStream) {
+            elements.cameraStopStream.addEventListener("click", () => {
+                this.stopStream();
             });
         }
     }

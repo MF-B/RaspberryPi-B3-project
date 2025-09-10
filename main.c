@@ -189,8 +189,12 @@ void init_all_components(void) {
     init_wheel();  // 新增运动控制初始化
     printf(" 完成\n");
     
-    printf("9. 初始化摄像头...");
-    camera_init();   // 新增摄像头初始化
+    printf("9. 启动摄像头服务...");
+    // 启动摄像头守护进程
+    system("./camera_service.sh start > /dev/null 2>&1");
+    // 等待服务启动
+    sleep(2);
+    camera_init();   // 初始化摄像头模块
     printf(" 完成\n");
     
     printf("所有硬件组件初始化完成\n");
@@ -204,6 +208,8 @@ void cleanup_all_components(void) {
     servo_cleanup();
     clean_wheel();  // 新增运动控制清理
     camera_cleanup();   // 新增摄像头清理
+    // 停止摄像头守护进程
+    system("./camera_service.sh stop > /dev/null 2>&1");
     
     printf("硬件资源清理完成\n");
 }
