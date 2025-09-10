@@ -166,7 +166,7 @@ void init_all_components(void) {
     printf(" 完成\n");
     
     printf("3. 初始化时钟显示...");
-    tm1637_init();
+    clock_init();
     printf(" 完成\n");
     
     printf("4. 初始化RGB LED...");

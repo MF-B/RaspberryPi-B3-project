@@ -16,7 +16,7 @@
 | 距离传感器 | `distance_` | `distance_init()` |
 | 温度传感器 | `temp_` | `temp_init()` |
 | 按钮 | `button_` | `button_init()` |
-| 时钟显示 | `tm1637_` | `tm1637_init()` |
+| 时钟显示 | `clock_` | `clock_init()` |
 | 摄像头 | `camera_` | `camera_init()` |
 | 运动控制 | `wheel_` | `wheel_init()` |
 
@@ -92,6 +92,15 @@ int distance_read(void);       // 读取距离数据
 // 核心函数
 void button_init(void);        // 初始化按钮
 int button_is_pressed(void);   // 检查按钮状态
+```
+
+### 3.6 时钟显示组件 (clock)
+```c
+// 核心函数
+void clock_init(void);         // 初始化时钟显示器
+void clock_display_time(void); // 显示当前时间
+void clock_display_text(char *text); // 显示文本
+void clock_cleanup(void);      // 清理资源
 ```
 
 ## 4. 文件组织规范
