@@ -4,12 +4,11 @@ CXX = g++
 CFLAGS = -Wall -Wextra -std=c99 -D_GNU_SOURCE
 CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -lwiringPi -lpthread -lcjson -lm `pkg-config --libs opencv4`
-INCLUDES = -Icomponents -Icombo -Iweb `pkg-config --cflags opencv4`
+INCLUDES = -Icomponents -Iweb `pkg-config --cflags opencv4`
 
 # 源文件
 C_SRCS = main.c \
          components/botton.c components/clock.c components/beep.c components/rgb.c components/DHT.c components/usonic.c components/servo.c components/control.c \
-         combo/alarm_clock.c combo/stopwatch.c combo/rgb_control.c combo/temp_display.c \
          web/http_server.c web/api_handlers.c
 
 CXX_SRCS = components/camera.cpp
@@ -31,9 +30,6 @@ $(TARGET): $(OBJS)
 
 # C文件编译规则
 target/%.o: components/%.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
-target/%.o: combo/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 target/%.o: web/%.c

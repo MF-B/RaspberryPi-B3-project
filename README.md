@@ -48,12 +48,9 @@ RaspberryPi-B3-project/
 │   ├── rgb.c/.h        # RGB LED控制
 │   ├── DHT.c/.h        # 温湿度传感器
 │   ├── usonic.c/.h     # 超声波传感器
-│   └── servo.c/.h      # 舵机控制
-├── combo/              # 组合功能模块
-│   ├── alarm_clock.c/.h    # 闹钟功能
-│   ├── stopwatch.c/.h      # 秒表功能
-│   ├── temp_display.c/.h   # 温度显示
-│   └── rgb_control.c/.h    # RGB控制
+│   ├── servo.c/.h      # 舵机控制
+│   ├── control.c/.h    # 运动控制
+│   └── camera.cpp/.h   # 摄像头控制
 └── README.md           # 项目说明文档
 ```
 
