@@ -4,6 +4,8 @@
 
 using namespace cv;
 
+extern "C" {
+
 // 全局变量
 static VideoCapture g_camera;
 static camera_state_t g_camera_state = {CAMERA_STATUS_STOPPED, 0, 0};
@@ -118,3 +120,5 @@ int camera_update_stream_snapshot(void) {
     }
     return -1;
 }
+
+} // extern "C"

@@ -6,6 +6,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // 摄像头状态枚举
 typedef enum {
     CAMERA_STATUS_STOPPED = 0,
@@ -28,5 +32,9 @@ int camera_start_stream(void);
 int camera_stop_stream(void);
 int camera_is_available(void);
 camera_state_t camera_get_state(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CAMERA_H
