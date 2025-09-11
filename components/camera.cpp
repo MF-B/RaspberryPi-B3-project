@@ -57,7 +57,8 @@ int camera_take_snapshot(void) {
     }
     
     Mat frame;
-    if (!g_camera.read(frame) || frame.empty()) {
+    g_camera >> frame;
+    if (frame.empty()) {
         printf("错误: 无法捕获图像\n");
         return -1;
     }
