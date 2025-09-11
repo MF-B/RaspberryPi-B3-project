@@ -34,6 +34,7 @@ int camera_start_stream(void);
 int camera_stop_stream(void);
 int camera_capture_frame_to_file(const char* filename);
 int camera_is_streaming(void);
+int camera_set_fps(int fps);
 
 #ifdef __cplusplus
 }

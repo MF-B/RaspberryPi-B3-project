@@ -769,15 +769,22 @@ class CameraController {
     }
 
     static startStreamRefresh() {
-        // 每500ms刷新一次实时画面
+        // 提高刷新频率到每100ms（约10fps显示），配合后端15fps的帧率
         this.streamInterval = setInterval(() => {
             if (this.isStreaming) {
                 const timestamp = Date.now();
-                elements.cameraPreview.src = "/images/live_frame.jpg?t=" + timestamp;
-                elements.cameraPreview.style.display = "block";
-                elements.previewPlaceholder.style.display = "none";
+                const img = new Image();
+                img.onload = () => {
+                    elements.cameraPreview.src = img.src;
+                    elements.cameraPreview.style.display = "block";
+                    elements.previewPlaceholder.style.display = "none";
+                };
+                img.onerror = () => {
+                    console.warn('加载实时图像失败，继续尝试...');
+                };
+                img.src = "/images/live_frame.jpg?t=" + timestamp;
             }
-        }, 500);
+        }, 100); // 100ms间隔，约10fps显示
     }
 
     static stopStreamRefresh() {
