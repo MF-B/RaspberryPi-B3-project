@@ -453,3 +453,87 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
     free(json_string);
     cJSON_Delete(json);
 }
+
+// API: 摄像头视频流控制
+void api_camera_stream(http_request_t *request, http_response_t *response) {
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        // 解析POST数据
+        cJSON *post_json = cJSON_Parse(request->body);
+        if (!post_json) {
+            log_error("无效的JSON数据: %s", request->body);
+            create_error_response(response, 400, "Invalid JSON");
+            return;
+        }
+        
+        cJSON *action = cJSON_GetObjectItem(post_json, "action");
+        if (!action || !cJSON_IsString(action)) {
+            log_error("缺少动作参数");
+            create_error_response(response, 400, "Missing action parameter");
+            cJSON_Delete(post_json);
+            return;
+        }
+        
+        const char *action_str = cJSON_GetStringValue(action);
+        log_info("执行视频流动作: %s", action_str);
+        
+        if (strcmp(action_str, "start") == 0) {
+            log_info("启动视频流");
+            if (camera_start_stream() == 0) {
+                log_info("视频流启动成功");
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Stream started");
+                cJSON_AddStringToObject(json, "stream_url", "/api/camera/mjpeg");
+            } else {
+                log_error("视频流启动失败");
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to start stream");
+            }
+        } else if (strcmp(action_str, "stop") == 0) {
+            log_info("停止视频流");
+            if (camera_stop_stream() == 0) {
+                log_info("视频流停止成功");
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Stream stopped");
+            } else {
+                log_error("视频流停止失败");
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to stop stream");
+            }
+        } else {
+            log_warn("无效的视频流动作: %s", action_str);
+            create_error_response(response, 400, "Invalid action");
+            cJSON_Delete(post_json);
+            return;
+        }
+        
+        cJSON_Delete(post_json);
+    } else if (strcmp(request->method, "GET") == 0) {
+        // 获取视频流状态
+        cJSON_AddStringToObject(json, "status", "success");
+        
+        cJSON *stream_info = cJSON_CreateObject();
+        cJSON_AddBoolToObject(stream_info, "running", camera_is_streaming());
+        cJSON_AddBoolToObject(stream_info, "available", camera_is_available());
+        
+        camera_state_t state = camera_get_state();
+        cJSON_AddNumberToObject(stream_info, "frame_count", state.frame_count);
+        
+        if (camera_is_streaming()) {
+            cJSON_AddStringToObject(stream_info, "stream_url", "/api/camera/mjpeg");
+        }
+        
+        cJSON_AddItemToObject(json, "stream", stream_info);
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}

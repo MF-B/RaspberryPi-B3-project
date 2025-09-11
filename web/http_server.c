@@ -4,6 +4,7 @@
 #include "../components/temp.h"
 #include "../components/distance.h"
 #include "../components/clock.h"
+#include "../components/camera.h"  // 新增摄像头支持
 #include "log.h"  // log.c 日志库
 #include <signal.h>
 #include <cjson/cJSON.h>
@@ -131,7 +132,16 @@ void *handle_client(void *arg) {
     
     // 路由处理
     if (strncmp(request.path, "/api/", 5) == 0) {
-        handle_api_request(&request, &response);
+        // 检查是否是MJPEG流请求
+        if (strcmp(request.path, "/api/camera/mjpeg") == 0) {
+            // 直接处理MJPEG流，不使用标准响应结构
+            handle_mjpeg_stream(client->socket_fd);
+            close(client->socket_fd);
+            free(client);
+            return NULL;
+        } else {
+            handle_api_request(&request, &response);
+        }
     } else {
         handle_static_file(&request, &response);
     }
@@ -237,6 +247,8 @@ void handle_api_request(http_request_t *request, http_response_t *response) {
         api_control_motion(request, response);  // 新增运动控制路由
     } else if (strcmp(request->path, "/api/camera") == 0) {
         api_camera_control(request, response);  // 新增摄像头控制路由
+    } else if (strcmp(request->path, "/api/camera/stream") == 0) {
+        api_camera_stream(request, response);  // 新增视频流控制路由
     } else {
         create_error_response(response, 404, "API Not Found");
     }
@@ -335,4 +347,73 @@ void create_error_response(http_response_t *response, int status_code, const cha
 // 停止服务器
 void stop_server(void) {
     server_running = 0;
+}
+
+// 处理MJPEG视频流
+void handle_mjpeg_stream(int client_fd) {
+    // 首先检查摄像头是否可用和流是否运行
+    if (!camera_is_available() || !camera_is_streaming()) {
+        // 发送错误响应
+        const char *error_response = 
+            "HTTP/1.1 503 Service Unavailable\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: 28\r\n"
+            "\r\n"
+            "Camera stream not available";
+        send(client_fd, error_response, strlen(error_response), 0);
+        return;
+    }
+    
+    // 发送MJPEG流头
+    const char *stream_header = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: multipart/x-mixed-replace; boundary=mjpegboundary\r\n"
+        "Cache-Control: no-cache\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+    
+    if (send(client_fd, stream_header, strlen(stream_header), 0) < 0) {
+        log_error("发送MJPEG流头失败");
+        return;
+    }
+    
+    log_info("开始MJPEG流传输");
+    
+    // 持续发送帧
+    mjpeg_frame_t frame;
+    while (server_running && camera_is_streaming()) {
+        // 获取新帧
+        if (camera_get_mjpeg_frame(&frame) == 0) {
+            send_mjpeg_frame(client_fd, (const char*)frame.data, frame.size);
+            camera_free_frame(&frame);
+        } else {
+            // 如果获取帧失败，稍微等待一下
+            usleep(100000); // 100ms
+        }
+    }
+    
+    log_info("MJPEG流传输结束");
+}
+
+// 发送单个MJPEG帧
+void send_mjpeg_frame(int client_fd, const char *frame_data, size_t frame_size) {
+    // 构建multipart边界和头
+    char frame_header[256];
+    int header_len = snprintf(frame_header, sizeof(frame_header),
+        "\r\n--mjpegboundary\r\n"
+        "Content-Type: image/jpeg\r\n"
+        "Content-Length: %zu\r\n"
+        "\r\n", frame_size);
+    
+    // 发送帧头
+    if (send(client_fd, frame_header, header_len, 0) < 0) {
+        log_error("发送MJPEG帧头失败");
+        return;
+    }
+    
+    // 发送帧数据
+    if (send(client_fd, frame_data, frame_size, 0) < 0) {
+        log_error("发送MJPEG帧数据失败");
+        return;
+    }
 }

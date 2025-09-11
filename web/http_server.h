@@ -32,6 +32,8 @@
 #define MIME_JS "application/javascript"
 #define MIME_JSON "application/json"
 #define MIME_PLAIN "text/plain"
+#define MIME_MJPEG "multipart/x-mixed-replace; boundary=mjpegboundary"
+#define MIME_JPEG "image/jpeg"
 
 // HTTP请求结构
 typedef struct {
@@ -77,6 +79,11 @@ void api_control_beep(http_request_t *request, http_response_t *response);
 void api_get_distance(http_request_t *request, http_response_t *response);
 void api_control_motion(http_request_t *request, http_response_t *response);  // 新增运动控制
 void api_camera_control(http_request_t *request, http_response_t *response);  // 新增摄像头控制
+void api_camera_stream(http_request_t *request, http_response_t *response);   // 新增视频流
+
+// MJPEG流处理函数
+void handle_mjpeg_stream(int client_fd);
+void send_mjpeg_frame(int client_fd, const char *frame_data, size_t frame_size);
 
 // 服务器状态
 extern volatile int server_running;

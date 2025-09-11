@@ -354,6 +354,11 @@ body {
     color: white;
 }
 
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
 /* 底部样式 */
 .footer {
     background: rgba(255, 255, 255, 0.95);

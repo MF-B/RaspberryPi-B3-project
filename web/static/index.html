@@ -195,9 +195,10 @@
                 <div class="camera-preview">
                     <div class="preview-container" id="camera-preview-container">
                         <img id="camera-preview" src="" alt="摄像头预览" style="display: none;" />
+                        <img id="camera-stream" src="" alt="视频流" style="display: none;" />
                         <div class="preview-placeholder" id="camera-placeholder">
                             <i class="fas fa-camera"></i>
-                            <p>点击拍照开始预览</p>
+                            <p>点击拍照或启动视频流</p>
                         </div>
                     </div>
                 </div>
@@ -206,12 +207,22 @@
                     <button id="camera-snapshot" class="btn btn-primary">
                         <i class="fas fa-camera"></i> 拍照
                     </button>
+                    <button id="camera-stream-start" class="btn btn-success">
+                        <i class="fas fa-video"></i> 启动视频流
+                    </button>
+                    <button id="camera-stream-stop" class="btn btn-danger" style="display: none;">
+                        <i class="fas fa-stop"></i> 停止视频流
+                    </button>
                 </div>
                 
                 <div class="camera-status">
                     <div class="status-row">
                         <span class="status-label">状态:</span>
                         <span class="status-value" id="camera-status">未知</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">视频流:</span>
+                        <span class="status-value" id="stream-status">未启动</span>
                     </div>
                     <div class="status-row">
                         <span class="status-label">分辨率:</span>
