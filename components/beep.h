@@ -3,9 +3,7 @@
 
 #include <wiringPi.h>
 #include <stdio.h>
-
-// 蜂鸣器引脚定义
-#define BEEP_PIN 18
+#include "../config/pins.h"
 
 // 蜂鸣器核心函数声明
 void beep_init(void);

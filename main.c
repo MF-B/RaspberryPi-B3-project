@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <wiringPi.h>
+#include "config/config.h" // 配置文件
 #include "log.h" // log.c 日志库
 #include "web/http_server.h"
 #include "components/beep.h"

@@ -3,9 +3,7 @@
 
 #include <wiringPi.h>
 #include <stdio.h>
-
-// 按键引脚定义
-#define BUTTON_PIN 4
+#include "../config/pins.h"
 
 // 按键核心函数声明
 void button_init(void);

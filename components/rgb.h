@@ -3,11 +3,7 @@
 
 #include <wiringPi.h>
 #include <stdio.h>
-
-// RGB引脚定义
-#define RGB_R_PIN 16
-#define RGB_G_PIN 20
-#define RGB_B_PIN 21
+#include "../config/pins.h"
 
 // RGB核心函数声明
 void rgb_init(void);

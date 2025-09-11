@@ -4,10 +4,7 @@
 #include <wiringPi.h>
 #include <stdio.h>
 #include <time.h>
-
-// TM1637时钟显示器引脚定义
-#define CLOCK_DIO_PIN 22
-#define CLOCK_CLK_PIN 27
+#include "../config/pins.h"
 
 // 段码数据
 extern char segdata[];
