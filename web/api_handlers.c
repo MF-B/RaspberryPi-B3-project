@@ -415,6 +415,29 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
                 cJSON_AddStringToObject(json, "status", "error");
                 cJSON_AddStringToObject(json, "message", "Failed to take snapshot");
             }
+        } else if (strcmp(action_str, "start_stream") == 0) {
+            log_info("启动视频流");
+            if (camera_start_stream() == 0) {
+                log_info("视频流启动成功");
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Video stream started");
+                cJSON_AddStringToObject(json, "stream_url", "/images/live_frame.jpg");
+            } else {
+                log_error("视频流启动失败");
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to start video stream");
+            }
+        } else if (strcmp(action_str, "stop_stream") == 0) {
+            log_info("停止视频流");
+            if (camera_stop_stream() == 0) {
+                log_info("视频流停止成功");
+                cJSON_AddStringToObject(json, "status", "success");
+                cJSON_AddStringToObject(json, "message", "Video stream stopped");
+            } else {
+                log_error("视频流停止失败");
+                cJSON_AddStringToObject(json, "status", "error");
+                cJSON_AddStringToObject(json, "message", "Failed to stop video stream");
+            }
         } else {
             log_warn("无效的摄像头动作: %s", action_str);
             create_error_response(response, 400, "Invalid action");
@@ -438,6 +461,7 @@ void api_camera_control(http_request_t *request, http_response_t *response) {
         }
         cJSON_AddStringToObject(camera_info, "status", status_str);
         cJSON_AddBoolToObject(camera_info, "available", camera_is_available());
+        cJSON_AddBoolToObject(camera_info, "streaming", camera_is_streaming());
         cJSON_AddNumberToObject(camera_info, "frame_count", state.frame_count);
         
         cJSON_AddItemToObject(json, "camera", camera_info);

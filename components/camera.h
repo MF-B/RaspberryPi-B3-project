@@ -29,6 +29,12 @@ int camera_take_snapshot(void);
 int camera_is_available(void);
 camera_state_t camera_get_state(void);
 
+// 视频流函数声明
+int camera_start_stream(void);
+int camera_stop_stream(void);
+int camera_capture_frame_to_file(const char* filename);
+int camera_is_streaming(void);
+
 #ifdef __cplusplus
 }
 #endif

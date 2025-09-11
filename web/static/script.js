@@ -45,7 +45,10 @@ const elements = {
     // 摄像头元素
     cameraPreview: document.getElementById('camera-preview'),
     cameraSnapshot: document.getElementById('camera-snapshot'),
+    cameraStartStream: document.getElementById('camera-start-stream'),
+    cameraStopStream: document.getElementById('camera-stop-stream'),
     cameraStatus: document.getElementById('camera-status'),
+    cameraStreamingStatus: document.getElementById('camera-streaming-status'),
     cameraResolution: document.getElementById('camera-resolution'),
     cameraFrameCount: document.getElementById('camera-frame-count'),
     previewPlaceholder: document.getElementById('camera-placeholder')
@@ -507,6 +510,18 @@ function setupEventListeners() {
         });
     }
 
+    if (elements.cameraStartStream) {
+        elements.cameraStartStream.addEventListener('click', () => {
+            CameraController.startStream();
+        });
+    }
+
+    if (elements.cameraStopStream) {
+        elements.cameraStopStream.addEventListener('click', () => {
+            CameraController.stopStream();
+        });
+    }
+
     // 通知关闭
     elements.notificationClose.addEventListener('click', () => {
         Utils.hideNotification();
@@ -632,6 +647,9 @@ window.addEventListener('offline', () => {
 
 // 摄像头控制
 class CameraController {
+    static streamInterval = null;
+    static isStreaming = false;
+
     static async takeSnapshot() {
         console.log('开始执行拍照功能...');
         try {
@@ -671,6 +689,104 @@ class CameraController {
         }
     }
 
+    static async startStream() {
+        console.log('开始视频流...');
+        try {
+            Utils.showLoading();
+            
+            const response = await fetch(`${API_BASE_URL}/api/camera`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "start_stream"
+                })
+            });
+
+            const data = await response.json();
+            console.log('启动视频流响应:', data);
+            
+            if (data.status === "success") {
+                this.isStreaming = true;
+                // 更新UI状态
+                if (elements.cameraStartStream) elements.cameraStartStream.style.display = "none";
+                if (elements.cameraStopStream) elements.cameraStopStream.style.display = "inline-block";
+                if (elements.cameraStreamingStatus) elements.cameraStreamingStatus.textContent = "运行中";
+                
+                // 开始定期刷新实时画面
+                this.startStreamRefresh();
+                
+                Utils.showNotification("视频流已启动", "success");
+            } else {
+                Utils.showNotification(`启动视频流失败: ${data.message}`, "error");
+            }
+        } catch (error) {
+            console.error("启动视频流失败:", error);
+            Utils.showNotification("启动视频流失败，请检查网络连接", "error");
+        } finally {
+            Utils.hideLoading();
+        }
+    }
+
+    static async stopStream() {
+        console.log('停止视频流...');
+        try {
+            Utils.showLoading();
+            
+            const response = await fetch(`${API_BASE_URL}/api/camera`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "stop_stream"
+                })
+            });
+
+            const data = await response.json();
+            console.log('停止视频流响应:', data);
+            
+            if (data.status === "success") {
+                this.isStreaming = false;
+                this.stopStreamRefresh();
+                
+                // 更新UI状态
+                if (elements.cameraStartStream) elements.cameraStartStream.style.display = "inline-block";
+                if (elements.cameraStopStream) elements.cameraStopStream.style.display = "none";
+                if (elements.cameraStreamingStatus) elements.cameraStreamingStatus.textContent = "停止";
+                
+                Utils.showNotification("视频流已停止", "success");
+            } else {
+                Utils.showNotification(`停止视频流失败: ${data.message}`, "error");
+            }
+        } catch (error) {
+            console.error("停止视频流失败:", error);
+            Utils.showNotification("停止视频流失败，请检查网络连接", "error");
+        } finally {
+            Utils.hideLoading();
+        }
+    }
+
+    static startStreamRefresh() {
+        // 每500ms刷新一次实时画面
+        this.streamInterval = setInterval(() => {
+            if (this.isStreaming) {
+                const timestamp = Date.now();
+                elements.cameraPreview.src = "/images/live_frame.jpg?t=" + timestamp;
+                elements.cameraPreview.style.display = "block";
+                elements.previewPlaceholder.style.display = "none";
+            }
+        }, 500);
+    }
+
+    static stopStreamRefresh() {
+        if (this.streamInterval) {
+            clearInterval(this.streamInterval);
+            this.streamInterval = null;
+        }
+    }
+
     static async getStatus() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/camera`);
@@ -681,6 +797,9 @@ class CameraController {
                 if (elements.cameraStatus) {
                     elements.cameraStatus.textContent = data.camera.status || "未知";
                 }
+                if (elements.cameraStreamingStatus) {
+                    elements.cameraStreamingStatus.textContent = data.camera.streaming ? "运行中" : "停止";
+                }
                 if (elements.cameraResolution) {
                     const config = data.camera.config;
                     const resolution = config ? `${config.width}x${config.height}` : "640x480";
@@ -688,6 +807,21 @@ class CameraController {
                 }
                 if (elements.cameraFrameCount) {
                     elements.cameraFrameCount.textContent = data.camera.frame_count || "0";
+                }
+                
+                // 根据流状态更新UI
+                const isStreaming = data.camera.streaming;
+                if (isStreaming !== this.isStreaming) {
+                    this.isStreaming = isStreaming;
+                    if (isStreaming) {
+                        if (elements.cameraStartStream) elements.cameraStartStream.style.display = "none";
+                        if (elements.cameraStopStream) elements.cameraStopStream.style.display = "inline-block";
+                        this.startStreamRefresh();
+                    } else {
+                        if (elements.cameraStartStream) elements.cameraStartStream.style.display = "inline-block";
+                        if (elements.cameraStopStream) elements.cameraStopStream.style.display = "none";
+                        this.stopStreamRefresh();
+                    }
                 }
             }
             return data;
