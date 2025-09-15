@@ -15,6 +15,28 @@
 #define WHEEL_MAX_SPEED 100
 #define WHEEL_DEFAULT_SPEED 50
 
+// 运动状态枚举
+typedef enum {
+    MOTION_STOP,
+    MOTION_FORWARD,
+    MOTION_BACKWARD,
+    MOTION_LEFT,
+    MOTION_RIGHT,
+    MOTION_ACCELERATE,
+    MOTION_DECELERATE
+} motion_type_t;
+
+// 运动状态结构体
+typedef struct {
+    int left_speed;
+    int right_speed;
+    int is_moving;
+    motion_type_t current_motion;
+} motion_state_t;
+
+// 状态查询函数
+motion_state_t get_motion_state(void);
+
 // 核心函数
 void wheel_init(void);
 void wheel_on(void);

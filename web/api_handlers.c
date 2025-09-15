@@ -300,19 +300,19 @@ void api_control_motion(http_request_t *request, http_response_t *response) {
         
         // 执行运动控制
         if (strcmp(action_str, "forward") == 0) {
-            control_move_forward(speed);
+            wheel_forward(speed);
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "Moving forward");
             cJSON_AddStringToObject(json, "action", "forward");
             cJSON_AddNumberToObject(json, "speed", speed);
         } else if (strcmp(action_str, "backward") == 0) {
-            control_move_backward(speed);
+            wheel_backward(speed);
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "Moving backward");
             cJSON_AddStringToObject(json, "action", "backward");
             cJSON_AddNumberToObject(json, "speed", speed);
         } else if (strcmp(action_str, "left") == 0) {
-            control_turn_left(speed, duration);
+            wheel_left(speed);
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "Turning left");
             cJSON_AddStringToObject(json, "action", "left");
@@ -321,7 +321,7 @@ void api_control_motion(http_request_t *request, http_response_t *response) {
                 cJSON_AddNumberToObject(json, "duration", duration);
             }
         } else if (strcmp(action_str, "right") == 0) {
-            control_turn_right(speed, duration);
+            wheel_right(speed);
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "Turning right");
             cJSON_AddStringToObject(json, "action", "right");
@@ -330,7 +330,7 @@ void api_control_motion(http_request_t *request, http_response_t *response) {
                 cJSON_AddNumberToObject(json, "duration", duration);
             }
         } else if (strcmp(action_str, "stop") == 0) {
-            control_stop();
+            wheel_off();
             cJSON_AddStringToObject(json, "status", "success");
             cJSON_AddStringToObject(json, "message", "Stopped");
             cJSON_AddStringToObject(json, "action", "stop");

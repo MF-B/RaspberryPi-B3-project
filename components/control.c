@@ -3,8 +3,12 @@
 // PWM范围
 #define PWM_RANGE 100
 
+// 全局运动状态
+static motion_state_t current_state = {0, 0, 0, MOTION_STOP};
+
 // 内部辅助函数
 static void wheel_set_motor(int pin_pos, int pin_neg, int speed, int direction);
+static void update_motion_state(int left_speed, int right_speed, motion_type_t motion);
 
 // 设置单个电机的速度和方向
 static void wheel_set_motor(int pin_pos, int pin_neg, int speed, int direction)
@@ -59,6 +63,7 @@ void wheel_off(void)
 {
     wheel_set_motor(WHEEL_LP, WHEEL_LN, 0, 0);
     wheel_set_motor(WHEEL_RP, WHEEL_RN, 0, 0);
+    update_motion_state(0, 0, MOTION_STOP);
     printf("车轮控制: 停止\n");
 }
 
@@ -77,6 +82,7 @@ void wheel_forward(int speed)
     
     wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, -1);
     wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, -1);
+    update_motion_state(speed, speed, MOTION_FORWARD);
     printf("车轮控制: 前进 - 速度 %d\n", speed);
 }
 
@@ -88,6 +94,7 @@ void wheel_backward(int speed)
     
     wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, 1);
     wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, 1);
+    update_motion_state(speed, speed, MOTION_BACKWARD);
     printf("车轮控制: 后退 - 速度 %d\n", speed);
 }
 
@@ -99,6 +106,7 @@ void wheel_left(int speed)
     
     wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, 1);
     wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, -1);
+    update_motion_state(speed, speed, MOTION_LEFT);
     printf("车轮控制: 左转 - 速度 %d\n", speed);
 }
 
@@ -110,5 +118,21 @@ void wheel_right(int speed)
     
     wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, -1);
     wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, 1);
+    update_motion_state(speed, speed, MOTION_RIGHT);
     printf("车轮控制: 右转 - 速度 %d\n", speed);
+}
+
+// 更新运动状态的内部函数
+static void update_motion_state(int left_speed, int right_speed, motion_type_t motion)
+{
+    current_state.left_speed = left_speed;
+    current_state.right_speed = right_speed;
+    current_state.is_moving = (left_speed != 0 || right_speed != 0) ? 1 : 0;
+    current_state.current_motion = motion;
+}
+
+// 获取当前运动状态
+motion_state_t get_motion_state(void)
+{
+    return current_state;
 }
