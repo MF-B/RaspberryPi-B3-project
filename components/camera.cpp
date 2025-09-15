@@ -29,6 +29,7 @@ static const size_t MAX_FRAME_BUFFER_SIZE = 5;
 
 // MJPEG流线程函数
 static void* stream_thread_func(void* arg) {
+    (void)arg; // 避免未使用参数警告
     Mat frame;
     std::vector<uchar> buffer;
     std::vector<int> params = {IMWRITE_JPEG_QUALITY, 85};
