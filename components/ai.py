@@ -50,6 +50,10 @@ class AILineFollower:
         self.confidence = 0.0
         self.frame_count = 0
         
+        # 摄像头模式
+        self.use_shared_camera = False
+        self.snapshot_path = None
+        
         # 线程安全
         self.lock = threading.Lock()
         self.ai_thread = None
@@ -110,22 +114,56 @@ class AILineFollower:
             return False
     
     def initialize_camera(self):
-        """初始化摄像头"""
+        """初始化摄像头 - 优先尝试重用主程序的摄像头"""
+        # 方案1：尝试使用主程序拍摄的图片
         try:
-            self.cap = cv2.VideoCapture(self.camera_index)
-            if not self.cap.isOpened():
-                raise RuntimeError(f"无法打开摄像头 {self.camera_index}")
-            
-            # 设置摄像头参数
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            self.cap.set(cv2.CAP_PROP_FPS, 30)
-            
-            logger.info(f"摄像头初始化成功: {self.camera_index}")
-            return True
+            # 检查是否有主程序的快照文件
+            snapshot_path = "web/static/images/snapshot.jpg"
+            if os.path.exists(snapshot_path):
+                logger.info("检测到主程序摄像头快照，将重用主程序摄像头")
+                self.use_shared_camera = True
+                self.snapshot_path = snapshot_path
+                return True
         except Exception as e:
-            logger.error(f"摄像头初始化失败: {e}")
-            return False
+            logger.warning(f"检查共享摄像头失败: {e}")
+        
+        # 方案2：尝试多个摄像头索引（跳过0，因为主程序在使用）
+        camera_indices = [1, 2, 3, 10, 11, 12]
+        
+        for idx in camera_indices:
+            try:
+                logger.info(f"尝试初始化摄像头索引: {idx}")
+                self.cap = cv2.VideoCapture(idx)
+                
+                if self.cap.isOpened():
+                    # 测试读取一帧
+                    ret, frame = self.cap.read()
+                    if ret and frame is not None:
+                        logger.info(f"摄像头初始化成功，使用索引: {idx}")
+                        self.camera_index = idx  # 更新实际使用的索引
+                        self.use_shared_camera = False
+                        
+                        # 设置摄像头参数
+                        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
+                        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
+                        self.cap.set(cv2.CAP_PROP_FPS, 30)
+                        
+                        return True
+                    else:
+                        logger.warning(f"摄像头 {idx} 无法读取帧")
+                        self.cap.release()
+                else:
+                    logger.warning(f"无法打开摄像头 {idx}")
+                    if self.cap:
+                        self.cap.release()
+                        
+            except Exception as e:
+                logger.warning(f"尝试摄像头 {idx} 时出错: {e}")
+                if self.cap:
+                    self.cap.release()
+                    
+        logger.error("所有摄像头索引都初始化失败")
+        return False
     
     def preprocess_frame(self, frame):
         """预处理图像帧"""
@@ -202,6 +240,17 @@ class AILineFollower:
         except Exception as e:
             logger.error(f"更新状态文件失败: {e}")
     
+    def request_snapshot(self):
+        """请求主程序拍摄快照"""
+        try:
+            # 简单的方法：通过HTTP请求触发快照
+            import urllib.request
+            urllib.request.urlopen('http://localhost:8080/api/camera', 
+                                 data=b'{"action":"snapshot"}', 
+                                 timeout=1)
+        except Exception as e:
+            logger.debug(f"请求快照失败: {e}")
+    
     def ai_thread_function(self):
         """AI推理线程主函数"""
         logger.info("AI推理线程启动")
@@ -215,7 +264,20 @@ class AILineFollower:
                 logger.debug("AI线程运行中，开始处理帧...")
                 
                 # 读取摄像头帧
-                ret, frame = self.cap.read()
+                if self.use_shared_camera:
+                    # 从主程序的快照文件读取
+                    if os.path.exists(self.snapshot_path):
+                        frame = cv2.imread(self.snapshot_path)
+                        ret = frame is not None
+                    else:
+                        # 触发主程序拍摄新快照
+                        self.request_snapshot()
+                        time.sleep(0.1)
+                        continue
+                else:
+                    # 从独立摄像头读取
+                    ret, frame = self.cap.read()
+                    
                 if not ret:
                     logger.warning("无法读取摄像头帧")
                     time.sleep(0.1)
