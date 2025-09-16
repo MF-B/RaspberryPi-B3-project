@@ -249,6 +249,16 @@ void handle_api_request(http_request_t *request, http_response_t *response) {
         api_camera_control(request, response);  // 新增摄像头控制路由
     } else if (strcmp(request->path, "/api/camera/stream") == 0) {
         api_camera_stream(request, response);  // 新增视频流控制路由
+    } else if (strcmp(request->path, "/api/ai/start") == 0) {
+        api_ai_start(request, response);  // AI模块启动
+    } else if (strcmp(request->path, "/api/ai/stop") == 0) {
+        api_ai_stop(request, response);  // AI模块停止
+    } else if (strcmp(request->path, "/api/ai/enable") == 0) {
+        api_ai_enable(request, response);  // 启用AI寻迹
+    } else if (strcmp(request->path, "/api/ai/disable") == 0) {
+        api_ai_disable(request, response);  // 禁用AI寻迹
+    } else if (strcmp(request->path, "/api/ai/status") == 0) {
+        api_ai_status(request, response);  // 获取AI状态
     } else {
         create_error_response(response, 404, "API Not Found");
     }

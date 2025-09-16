@@ -1000,6 +1000,280 @@ body {
     font-weight: bold;
 }
 
+/* AI黑线寻迹面板样式 */
+.ai-panel {
+    background: linear-gradient(145deg, #e8f4fd 0%, #f0f9ff 100%);
+    border: 2px solid #3498db;
+}
+
+.ai-panel h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.ai-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ai-status-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #bdc3c7;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-label {
+    font-weight: 600;
+    color: #34495e;
+    font-size: 0.9em;
+}
+
+.status-value {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.status-value.stopped {
+    background: #e74c3c;
+    color: white;
+}
+
+.status-value.running {
+    background: #27ae60;
+    color: white;
+}
+
+.status-value.disabled {
+    background: #95a5a6;
+    color: white;
+}
+
+.status-value.enabled {
+    background: #3498db;
+    color: white;
+}
+
+.ai-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.ai-buttons .btn {
+    flex: 1;
+    min-width: 150px;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+}
+
+.ai-buttons .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.ai-buttons .btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ai-settings {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #bdc3c7;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.setting-item label {
+    font-weight: 600;
+    color: #34495e;
+    min-width: 120px;
+}
+
+.setting-item input[type="range"] {
+    flex: 1;
+    max-width: 150px;
+}
+
+.setting-item input[type="text"] {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    background: white;
+}
+
+#confidence-threshold-display {
+    min-width: 40px;
+    text-align: center;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.ai-visualization {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #dee2e6;
+    margin-top: 20px;
+}
+
+.direction-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.direction-arrow {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2em;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    transition: all 0.3s ease;
+}
+
+.direction-arrow.forward {
+    transform: rotate(0deg);
+    background: linear-gradient(145deg, #27ae60, #229954);
+}
+
+.direction-arrow.left {
+    transform: rotate(-90deg);
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+}
+
+.direction-arrow.right {
+    transform: rotate(90deg);
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+}
+
+.direction-arrow.stop {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+}
+
+.confidence-meter {
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+}
+
+.meter-bar {
+    width: 100%;
+    height: 20px;
+    background: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #bdc3c7;
+    position: relative;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.confidence-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.meter-label {
+    display: block;
+    margin-top: 8px;
+    font-weight: 600;
+    color: #34495e;
+    font-size: 0.9em;
+}
+
+/* AI面板响应式设计 */
+@media (max-width: 768px) {
+    .ai-status-display {
+        grid-template-columns: 1fr;
+    }
+    
+    .ai-buttons {
+        flex-direction: column;
+    }
+    
+    .ai-buttons .btn {
+        min-width: auto;
+    }
+    
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .setting-item label {
+        min-width: auto;
+    }
+    
+    .setting-item input[type="range"],
+    .setting-item input[type="text"] {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .direction-arrow {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5em;
+    }
+}
+
 @media (max-width: 768px) {
     .preview-container {
         max-width: 100%;

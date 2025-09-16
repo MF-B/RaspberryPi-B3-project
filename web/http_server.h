@@ -81,6 +81,13 @@ void api_control_motion(http_request_t *request, http_response_t *response);  //
 void api_camera_control(http_request_t *request, http_response_t *response);  // 新增摄像头控制
 void api_camera_stream(http_request_t *request, http_response_t *response);   // 新增视频流
 
+// AI API处理函数
+void api_ai_start(http_request_t *request, http_response_t *response);    // AI模块启动
+void api_ai_stop(http_request_t *request, http_response_t *response);     // AI模块停止
+void api_ai_enable(http_request_t *request, http_response_t *response);   // 启用AI寻迹
+void api_ai_disable(http_request_t *request, http_response_t *response);  // 禁用AI寻迹
+void api_ai_status(http_request_t *request, http_response_t *response);   // 获取AI状态
+
 // MJPEG流处理函数
 void handle_mjpeg_stream(int client_fd);
 void send_mjpeg_frame(int client_fd, const char *frame_data, size_t frame_size);

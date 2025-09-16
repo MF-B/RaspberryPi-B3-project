@@ -841,3 +841,311 @@ class CameraController {
         }
     }
 }
+
+// ==============================================
+// AI 黑线寻迹控制模块
+// ==============================================
+
+const AIController = {
+    // AI状态自动刷新
+    autoRefreshStatus: false,
+    statusInterval: null,
+    
+    // DOM元素
+    elements: {
+        aiStatus: document.getElementById('ai-status'),
+        aiTrackingStatus: document.getElementById('ai-tracking-status'),
+        aiDirection: document.getElementById('ai-direction'),
+        aiConfidence: document.getElementById('ai-confidence'),
+        aiFrameCount: document.getElementById('ai-frame-count'),
+        aiStart: document.getElementById('ai-start'),
+        aiStop: document.getElementById('ai-stop'),
+        aiEnable: document.getElementById('ai-enable'),
+        aiDisable: document.getElementById('ai-disable'),
+        confidenceThreshold: document.getElementById('ai-confidence-threshold'),
+        confidenceThresholdDisplay: document.getElementById('confidence-threshold-display'),
+        modelPath: document.getElementById('ai-model-path'),
+        directionArrow: document.getElementById('direction-arrow'),
+        confidenceBar: document.getElementById('confidence-bar')
+    },
+
+    // 初始化AI控制器
+    init() {
+        this.bindEvents();
+        this.updateUI();
+        this.startStatusRefresh();
+    },
+
+    // 绑定事件
+    bindEvents() {
+        // AI控制按钮
+        this.elements.aiStart.addEventListener('click', () => this.startAI());
+        this.elements.aiStop.addEventListener('click', () => this.stopAI());
+        this.elements.aiEnable.addEventListener('click', () => this.enableTracking());
+        this.elements.aiDisable.addEventListener('click', () => this.disableTracking());
+
+        // 置信度阈值滑块
+        this.elements.confidenceThreshold.addEventListener('input', (e) => {
+            this.elements.confidenceThresholdDisplay.textContent = e.target.value;
+        });
+    },
+
+    // 启动AI模块
+    async startAI() {
+        try {
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/api/ai/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showNotification('AI模块启动成功', 'success');
+                await this.refreshStatus();
+            } else {
+                throw new Error(data.message || 'AI模块启动失败');
+            }
+        } catch (error) {
+            console.error('启动AI模块失败:', error);
+            showNotification(`启动AI模块失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    // 停止AI模块
+    async stopAI() {
+        try {
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/api/ai/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showNotification('AI模块已停止', 'success');
+                await this.refreshStatus();
+            } else {
+                throw new Error(data.message || 'AI模块停止失败');
+            }
+        } catch (error) {
+            console.error('停止AI模块失败:', error);
+            showNotification(`停止AI模块失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    // 启用AI寻迹
+    async enableTracking() {
+        try {
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/api/ai/enable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showNotification('AI寻迹已启用', 'success');
+                await this.refreshStatus();
+            } else {
+                throw new Error(data.message || 'AI寻迹启用失败');
+            }
+        } catch (error) {
+            console.error('启用AI寻迹失败:', error);
+            showNotification(`启用AI寻迹失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    // 禁用AI寻迹
+    async disableTracking() {
+        try {
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/api/ai/disable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showNotification('AI寻迹已暂停', 'success');
+                await this.refreshStatus();
+            } else {
+                throw new Error(data.message || 'AI寻迹禁用失败');
+            }
+        } catch (error) {
+            console.error('禁用AI寻迹失败:', error);
+            showNotification(`禁用AI寻迹失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    // 获取AI状态
+    async getStatus() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/ai/status`);
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                return data.data;
+            } else {
+                throw new Error(data.message || '获取AI状态失败');
+            }
+        } catch (error) {
+            console.error('获取AI状态失败:', error);
+            return null;
+        }
+    },
+
+    // 刷新状态显示
+    async refreshStatus() {
+        const status = await this.getStatus();
+        if (status) {
+            this.updateStatusDisplay(status);
+            this.updateButtonStates(status);
+            this.updateVisualization(status);
+        }
+    },
+
+    // 更新状态显示
+    updateStatusDisplay(status) {
+        // 更新AI状态
+        this.elements.aiStatus.textContent = status.is_running ? '运行中' : '已停止';
+        this.elements.aiStatus.className = `status-value ${status.is_running ? 'running' : 'stopped'}`;
+
+        // 更新寻迹状态
+        this.elements.aiTrackingStatus.textContent = status.is_enabled ? '启用中' : '未启用';
+        this.elements.aiTrackingStatus.className = `status-value ${status.is_enabled ? 'enabled' : 'disabled'}`;
+
+        // 更新方向
+        const directionMap = {
+            'forward': '直行',
+            'left': '左转',
+            'right': '右转',
+            'stop': '停止'
+        };
+        this.elements.aiDirection.textContent = directionMap[status.current_direction] || '未知';
+
+        // 更新置信度
+        this.elements.aiConfidence.textContent = status.confidence.toFixed(3);
+
+        // 更新帧数
+        this.elements.aiFrameCount.textContent = status.frame_count || 0;
+    },
+
+    // 更新按钮状态
+    updateButtonStates(status) {
+        const isRunning = status.is_running;
+        const isEnabled = status.is_enabled;
+
+        // 启动/停止按钮
+        this.elements.aiStart.disabled = isRunning;
+        this.elements.aiStop.disabled = !isRunning;
+
+        // 启用/禁用按钮
+        this.elements.aiEnable.disabled = !isRunning || isEnabled;
+        this.elements.aiDisable.disabled = !isRunning || !isEnabled;
+    },
+
+    // 更新可视化显示
+    updateVisualization(status) {
+        // 更新方向箭头
+        const arrow = this.elements.directionArrow;
+        arrow.className = `direction-arrow ${status.current_direction}`;
+
+        // 更新方向图标
+        const iconMap = {
+            'forward': 'fas fa-arrow-up',
+            'left': 'fas fa-arrow-left',
+            'right': 'fas fa-arrow-right',
+            'stop': 'fas fa-stop'
+        };
+        const iconClass = iconMap[status.current_direction] || 'fas fa-question';
+        arrow.querySelector('i').className = iconClass;
+
+        // 更新置信度条
+        const confidencePercent = Math.round(status.confidence * 100);
+        this.elements.confidenceBar.style.width = `${confidencePercent}%`;
+
+        // 添加置信度颜色变化
+        if (status.confidence >= 0.8) {
+            this.elements.confidenceBar.style.background = 'linear-gradient(90deg, #27ae60, #2ecc71)';
+        } else if (status.confidence >= 0.6) {
+            this.elements.confidenceBar.style.background = 'linear-gradient(90deg, #f39c12, #f1c40f)';
+        } else {
+            this.elements.confidenceBar.style.background = 'linear-gradient(90deg, #e74c3c, #ec7063)';
+        }
+    },
+
+    // 更新UI状态
+    updateUI() {
+        // 初始化按钮状态
+        this.elements.aiStart.disabled = false;
+        this.elements.aiStop.disabled = true;
+        this.elements.aiEnable.disabled = true;
+        this.elements.aiDisable.disabled = true;
+
+        // 初始化显示
+        this.elements.aiStatus.textContent = '已停止';
+        this.elements.aiStatus.className = 'status-value stopped';
+        this.elements.aiTrackingStatus.textContent = '未启用';
+        this.elements.aiTrackingStatus.className = 'status-value disabled';
+        this.elements.aiDirection.textContent = '停止';
+        this.elements.aiConfidence.textContent = '0.000';
+        this.elements.aiFrameCount.textContent = '0';
+
+        // 初始化可视化
+        this.elements.directionArrow.className = 'direction-arrow stop';
+        this.elements.confidenceBar.style.width = '0%';
+    },
+
+    // 开始状态自动刷新
+    startStatusRefresh() {
+        if (this.statusInterval) {
+            clearInterval(this.statusInterval);
+        }
+
+        this.statusInterval = setInterval(() => {
+            if (this.autoRefreshStatus) {
+                this.refreshStatus();
+            }
+        }, 1000); // 每秒刷新一次
+
+        this.autoRefreshStatus = true;
+    },
+
+    // 停止状态自动刷新
+    stopStatusRefresh() {
+        if (this.statusInterval) {
+            clearInterval(this.statusInterval);
+            this.statusInterval = null;
+        }
+        this.autoRefreshStatus = false;
+    }
+};
+
+// 页面加载完成后初始化AI控制器
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查AI相关元素是否存在
+    if (document.getElementById('ai-start')) {
+        AIController.init();
+    }
+});

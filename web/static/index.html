@@ -188,6 +188,76 @@
                 </div>
             </section>
 
+            <!-- AI黑线寻迹面板 -->
+            <section class="card ai-panel">
+                <h2><i class="fas fa-robot"></i> AI黑线寻迹</h2>
+                <div class="ai-controls">
+                    <div class="ai-status-display">
+                        <div class="status-item">
+                            <span class="status-label">AI状态:</span>
+                            <span id="ai-status" class="status-value stopped">已停止</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">寻迹状态:</span>
+                            <span id="ai-tracking-status" class="status-value disabled">未启用</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">当前方向:</span>
+                            <span id="ai-direction" class="status-value">停止</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">置信度:</span>
+                            <span id="ai-confidence" class="status-value">0.000</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">处理帧数:</span>
+                            <span id="ai-frame-count" class="status-value">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-buttons">
+                        <button id="ai-start" class="btn btn-success">
+                            <i class="fas fa-play"></i> 启动AI模块
+                        </button>
+                        <button id="ai-stop" class="btn btn-danger" disabled>
+                            <i class="fas fa-stop"></i> 停止AI模块
+                        </button>
+                        <button id="ai-enable" class="btn btn-primary" disabled>
+                            <i class="fas fa-route"></i> 启用寻迹
+                        </button>
+                        <button id="ai-disable" class="btn btn-warning" disabled>
+                            <i class="fas fa-pause"></i> 暂停寻迹
+                        </button>
+                    </div>
+                    
+                    <div class="ai-settings">
+                        <div class="setting-item">
+                            <label for="ai-confidence-threshold">置信度阈值:</label>
+                            <input type="range" id="ai-confidence-threshold" min="0.1" max="1.0" value="0.7" step="0.1">
+                            <span id="confidence-threshold-display">0.7</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="ai-model-path">模型路径:</label>
+                            <input type="text" id="ai-model-path" value="./model/line_follower.tflite" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ai-visualization">
+                    <div class="direction-indicator">
+                        <div class="direction-arrow" id="direction-arrow">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                        <div class="confidence-meter">
+                            <div class="meter-bar">
+                                <div id="confidence-bar" class="confidence-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="meter-label">置信度</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- 摄像头控制面板 -->
             <section class="card camera-panel">
                 <h2><i class="fas fa-camera"></i> 摄像头控制</h2>

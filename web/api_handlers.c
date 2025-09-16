@@ -6,6 +6,7 @@
 #include "../components/clock.h"
 #include "../components/control.h"  // 新增运动控制
 #include "../components/camera.h"   // 新增摄像头
+#include "../components/ai.h"       // 新增AI模块
 #include "log.h"  // log.c 日志库
 #include <cjson/cJSON.h>
 
@@ -26,6 +27,7 @@ void api_get_status(http_request_t *request, http_response_t *response) {
     cJSON_AddStringToObject(components, "clock", "ready");
     cJSON_AddStringToObject(components, "control", "ready");  // 新增运动控制
     cJSON_AddStringToObject(components, "camera", camera_is_available() ? "ready" : "unavailable");  // 新增摄像头
+    cJSON_AddStringToObject(components, "ai", ai_is_running() ? "running" : "stopped");  // 新增AI模块
     
     cJSON_AddItemToObject(json, "status", status);
     cJSON_AddItemToObject(json, "timestamp", timestamp);
@@ -525,6 +527,238 @@ void api_camera_stream(http_request_t *request, http_response_t *response) {
         }
         
         cJSON_AddItemToObject(json, "stream", stream_info);
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+// ==============================================
+// AI 黑线寻迹 API 处理器
+// ==============================================
+
+// API: 启动AI模块
+void api_ai_start(http_request_t *request, http_response_t *response) {
+    (void)request; // 避免未使用参数警告
+    
+    log_info("API请求: POST /api/ai/start");
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        int result = ai_start();
+        
+        if (result == 0) {
+            cJSON_AddBoolToObject(json, "success", cJSON_True);
+            cJSON_AddStringToObject(json, "message", "AI模块启动成功");
+            log_info("AI模块启动成功");
+        } else {
+            cJSON_AddBoolToObject(json, "success", cJSON_False);
+            cJSON_AddStringToObject(json, "message", "AI模块启动失败");
+            log_error("AI模块启动失败: %d", result);
+        }
+        
+        // 添加当前状态
+        ai_status_t status = ai_get_status();
+        cJSON *status_obj = cJSON_CreateObject();
+        cJSON_AddBoolToObject(status_obj, "is_running", status.state == AI_STATE_RUNNING);
+        cJSON_AddBoolToObject(status_obj, "is_enabled", status.is_enabled);
+        cJSON_AddItemToObject(json, "status", status_obj);
+        
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+// API: 停止AI模块
+void api_ai_stop(http_request_t *request, http_response_t *response) {
+    (void)request; // 避免未使用参数警告
+    
+    log_info("API请求: POST /api/ai/stop");
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        int result = ai_stop();
+        
+        if (result == 0) {
+            cJSON_AddBoolToObject(json, "success", cJSON_True);
+            cJSON_AddStringToObject(json, "message", "AI模块已停止");
+            log_info("AI模块已停止");
+        } else {
+            cJSON_AddBoolToObject(json, "success", cJSON_False);
+            cJSON_AddStringToObject(json, "message", "AI模块停止失败");
+            log_error("AI模块停止失败: %d", result);
+        }
+        
+        // 添加当前状态
+        ai_status_t status = ai_get_status();
+        cJSON *status_obj = cJSON_CreateObject();
+        cJSON_AddBoolToObject(status_obj, "is_running", status.state == AI_STATE_RUNNING);
+        cJSON_AddBoolToObject(status_obj, "is_enabled", status.is_enabled);
+        cJSON_AddItemToObject(json, "status", status_obj);
+        
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+// API: 启用AI寻迹
+void api_ai_enable(http_request_t *request, http_response_t *response) {
+    (void)request; // 避免未使用参数警告
+    
+    log_info("API请求: POST /api/ai/enable");
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        if (!ai_is_running()) {
+            cJSON_AddBoolToObject(json, "success", cJSON_False);
+            cJSON_AddStringToObject(json, "message", "AI模块未运行，请先启动AI模块");
+        } else {
+            int result = ai_enable();
+            
+            if (result == 0) {
+                cJSON_AddBoolToObject(json, "success", cJSON_True);
+                cJSON_AddStringToObject(json, "message", "AI寻迹已启用");
+                log_info("AI寻迹已启用");
+            } else {
+                cJSON_AddBoolToObject(json, "success", cJSON_False);
+                cJSON_AddStringToObject(json, "message", "AI寻迹启用失败");
+                log_error("AI寻迹启用失败: %d", result);
+            }
+        }
+        
+        // 添加当前状态
+        ai_status_t status = ai_get_status();
+        cJSON *status_obj = cJSON_CreateObject();
+        cJSON_AddBoolToObject(status_obj, "is_running", status.state == AI_STATE_RUNNING);
+        cJSON_AddBoolToObject(status_obj, "is_enabled", status.is_enabled);
+        cJSON_AddItemToObject(json, "status", status_obj);
+        
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+// API: 禁用AI寻迹
+void api_ai_disable(http_request_t *request, http_response_t *response) {
+    (void)request; // 避免未使用参数警告
+    
+    log_info("API请求: POST /api/ai/disable");
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "POST") == 0) {
+        int result = ai_disable();
+        
+        if (result == 0) {
+            cJSON_AddBoolToObject(json, "success", cJSON_True);
+            cJSON_AddStringToObject(json, "message", "AI寻迹已暂停");
+            log_info("AI寻迹已暂停");
+        } else {
+            cJSON_AddBoolToObject(json, "success", cJSON_False);
+            cJSON_AddStringToObject(json, "message", "AI寻迹禁用失败");
+            log_error("AI寻迹禁用失败: %d", result);
+        }
+        
+        // 添加当前状态
+        ai_status_t status = ai_get_status();
+        cJSON *status_obj = cJSON_CreateObject();
+        cJSON_AddBoolToObject(status_obj, "is_running", status.state == AI_STATE_RUNNING);
+        cJSON_AddBoolToObject(status_obj, "is_enabled", status.is_enabled);
+        cJSON_AddItemToObject(json, "status", status_obj);
+        
+    } else {
+        create_error_response(response, 405, "Method Not Allowed");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    char *json_string = cJSON_Print(json);
+    create_json_response(response, json_string);
+    
+    free(json_string);
+    cJSON_Delete(json);
+}
+
+// API: 获取AI状态
+void api_ai_status(http_request_t *request, http_response_t *response) {
+    (void)request; // 避免未使用参数警告
+    
+    log_debug("API请求: GET /api/ai/status");
+    
+    cJSON *json = cJSON_CreateObject();
+    
+    if (strcmp(request->method, "GET") == 0) {
+        ai_status_t status = ai_get_status();
+        
+        cJSON_AddBoolToObject(json, "success", cJSON_True);
+        cJSON_AddStringToObject(json, "message", "状态获取成功");
+        
+        // 创建详细状态对象
+        cJSON *data = cJSON_CreateObject();
+        cJSON_AddBoolToObject(data, "is_running", status.state == AI_STATE_RUNNING);
+        cJSON_AddBoolToObject(data, "is_enabled", status.is_enabled);
+        
+        // 方向映射
+        const char* direction_str;
+        switch (status.current_direction) {
+            case AI_DIRECTION_FORWARD: direction_str = "forward"; break;
+            case AI_DIRECTION_LEFT: direction_str = "left"; break;
+            case AI_DIRECTION_RIGHT: direction_str = "right"; break;
+            case AI_DIRECTION_STOP:
+            default: direction_str = "stop"; break;
+        }
+        cJSON_AddStringToObject(data, "current_direction", direction_str);
+        
+        cJSON_AddNumberToObject(data, "confidence", status.confidence);
+        cJSON_AddNumberToObject(data, "frame_count", status.frame_count);
+        cJSON_AddNumberToObject(data, "last_update", status.last_update);
+        
+        // 状态描述
+        const char* state_str;
+        switch (status.state) {
+            case AI_STATE_RUNNING: state_str = "running"; break;
+            case AI_STATE_ERROR: state_str = "error"; break;
+            case AI_STATE_STOPPED:
+            default: state_str = "stopped"; break;
+        }
+        cJSON_AddStringToObject(data, "state", state_str);
+        
+        cJSON_AddItemToObject(json, "data", data);
+        
     } else {
         create_error_response(response, 405, "Method Not Allowed");
         cJSON_Delete(json);

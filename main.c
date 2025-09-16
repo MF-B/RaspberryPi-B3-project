@@ -23,6 +23,7 @@
 #include "components/distance.h"
 #include "components/control.h" // 运动控制
 #include "components/camera.h"  // 摄像头
+#include "components/ai.h"      // AI模块
 
 // 函数声明
 int init_all_components(void);
@@ -119,35 +120,35 @@ int init_all_components(void)
     log_info("=== 硬件组件初始化开始 ===");
 
     // 初始化各个组件
-    log_info("[1/8] 初始化蜂鸣器模块...");
+    log_info("[1/9] 初始化蜂鸣器模块...");
     beep_init();
     log_info("蜂鸣器模块初始化成功");
 
-    log_info("[2/8] 初始化按钮模块...");
+    log_info("[2/9] 初始化按钮模块...");
     button_init();
     log_info("按钮模块初始化成功");
 
-    log_info("[3/8] 初始化时钟显示模块...");
+    log_info("[3/9] 初始化时钟显示模块...");
     clock_init();
     log_info("时钟显示模块初始化成功");
 
-    log_info("[4/8] 初始化RGB LED模块...");
+    log_info("[4/9] 初始化RGB LED模块...");
     rgb_init();
     log_info("RGB LED模块初始化成功");
 
-    log_info("[5/8] 初始化距离传感器模块...");
+    log_info("[5/9] 初始化距离传感器模块...");
     distance_init();
     log_info("距离传感器模块初始化成功");
 
-    log_info("[6/8] 初始化温度传感器模块...");
+    log_info("[6/9] 初始化温度传感器模块...");
     temp_init();
     log_info("温度传感器模块初始化成功");
 
-    log_info("[7/8] 初始化运动控制模块...");
+    log_info("[7/9] 初始化运动控制模块...");
     wheel_init(); // 运动控制初始化
     log_info("运动控制模块初始化成功");
 
-    log_info("[8/8] 启动摄像头服务...");
+    log_info("[8/9] 启动摄像头服务...");
     // 启动摄像头守护进程
     int camera_result = camera_init();
     if (camera_result != 0)
@@ -161,9 +162,23 @@ int init_all_components(void)
         log_info("摄像头模块初始化成功");
     }
 
+    log_info("[9/9] 初始化AI模块...");
+    // 初始化AI模块
+    int ai_result = ai_init();
+    if (ai_result != 0)
+    {
+        log_warn("AI模块初始化失败 (返回码: %d)", ai_result);
+        log_warn("AI寻迹功能可能不可用，但系统将继续运行");
+    }
+    else
+    {
+        log_info("AI模块初始化成功");
+    }
+
     log_info("=== 所有硬件组件初始化完成 ===");
-    log_info("组件状态: 蜂鸣器✓ 按钮✓ 时钟✓ RGB✓ 距离✓ 温度✓ 运动✓ 摄像头%s",
-             camera_result == 0 ? "✓" : "⚠");
+    log_info("组件状态: 蜂鸣器✓ 按钮✓ 时钟✓ RGB✓ 距离✓ 温度✓ 运动✓ 摄像头%s AI%s",
+             camera_result == 0 ? "✓" : "⚠",
+             ai_result == 0 ? "✓" : "⚠");
 
     return 0;
 }
@@ -195,6 +210,10 @@ void cleanup_all_components(void)
     log_info("清理摄像头模块...");
     camera_cleanup();
     log_info("摄像头模块清理完成");
+
+    log_info("清理AI模块...");
+    ai_cleanup();
+    log_info("AI模块清理完成");
 
     log_info("停止摄像头守护进程...");
     log_info("=== 硬件资源清理完成 ===");
