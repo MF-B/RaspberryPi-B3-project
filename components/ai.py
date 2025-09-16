@@ -436,19 +436,42 @@ if __name__ == "__main__":
                 logger.error("AI模块启动失败")
                 sys.exit(1)
         else:
-            # 交互模式
+            # 交互模式 - 从stdin读取命令
             if ai.start():
-                print("AI模块启动成功，按 Ctrl+C 退出...")
+                logger.info("AI模块启动成功，等待命令...")
                 
-                while True:
-                    status = ai.get_status()
-                    print(f"方向: {status['current_direction']}, "
-                          f"置信度: {status['confidence']:.3f}, "
-                          f"帧数: {status['frame_count']}")
-                    
-                    time.sleep(1)
+                # 创建命令处理线程
+                def command_handler():
+                    while ai.is_running:
+                        try:
+                            line = sys.stdin.readline()
+                            if not line:
+                                break
+                            command = line.strip().lower()
+                            
+                            if command == "enable":
+                                ai.enable_ai()
+                                logger.info("AI寻迹已启用")
+                            elif command == "disable":
+                                ai.disable_ai()
+                                logger.info("AI寻迹已禁用")
+                            elif command == "status":
+                                status = ai.get_status()
+                                logger.info(f"状态: {status}")
+                            elif command == "quit" or command == "exit":
+                                break
+                        except Exception as e:
+                            logger.error(f"命令处理错误: {e}")
+                
+                # 启动命令处理线程
+                cmd_thread = threading.Thread(target=command_handler, daemon=True)
+                cmd_thread.start()
+                
+                # 主循环
+                while ai.is_running:
+                    time.sleep(0.1)
             else:
-                print("AI模块启动失败")
+                logger.error("AI模块启动失败")
                 sys.exit(1)
     
     except KeyboardInterrupt:
