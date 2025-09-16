@@ -15,6 +15,9 @@ import time
 import sys
 import os
 import logging
+import json
+import signal
+import argparse
 import ctypes
 from ctypes import c_int, c_float, c_char_p, POINTER
 
@@ -173,28 +176,30 @@ class AILineFollower:
     
     def control_robot(self, direction, confidence, speed=50):
         """控制机器人运动"""
-        if not self.control_lib:
-            logger.debug(f"预测方向: {direction}, 置信度: {confidence:.3f}")
-            return
-        
         try:
-            # 只有置信度足够高才执行控制
-            if confidence > 0.7:
-                if direction == "forward":
-                    self.control_lib.wheel_forward(speed)
-                elif direction == "left":
-                    self.control_lib.wheel_left(speed)
-                elif direction == "right":
-                    self.control_lib.wheel_right(speed)
-                else:
-                    self.control_lib.wheel_off()
-            else:
-                # 置信度不够，停止
-                self.control_lib.wheel_off()
-                
-            logger.debug(f"执行动作: {direction}, 置信度: {confidence:.3f}")
+            # 写入控制命令到文件，让C程序读取
+            control_data = {
+                "direction": direction,
+                "confidence": float(confidence),
+                "speed": speed,
+                "timestamp": time.time()
+            }
+            
+            with open("/tmp/ai_control.json", "w") as f:
+                json.dump(control_data, f)
+            
+            logger.debug(f"发送控制命令: {direction}, 置信度: {confidence:.3f}")
         except Exception as e:
-            logger.error(f"机器人控制失败: {e}")
+            logger.error(f"控制命令发送失败: {e}")
+    
+    def update_status_file(self):
+        """更新状态文件"""
+        try:
+            status = self.get_status()
+            with open("/tmp/ai_status.json", "w") as f:
+                json.dump(status, f)
+        except Exception as e:
+            logger.error(f"更新状态文件失败: {e}")
     
     def ai_thread_function(self):
         """AI推理线程主函数"""
@@ -222,9 +227,12 @@ class AILineFollower:
                     self.confidence = confidence
                     self.frame_count += 1
                 
-                # 控制机器人(如果启用了直接控制)
+                # 控制机器人
                 if direction and confidence:
                     self.control_robot(direction, confidence)
+                
+                # 更新状态文件
+                self.update_status_file()
                 
                 # 控制帧率
                 time.sleep(0.033)  # 约30FPS

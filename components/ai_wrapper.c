@@ -1,4 +1,5 @@
 #include "ai.h"
+#include "control.h"
 #include <python3.11/Python.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -20,6 +21,7 @@ static int start_python_process(void);
 static int stop_python_process(void);
 static int send_python_command(const char* command);
 static int read_python_status(void);
+static int process_ai_control(void);
 static void update_status(ai_state_t state, int enabled, ai_direction_t direction, float confidence);
 
 // 初始化AI模块
@@ -197,6 +199,16 @@ ai_status_t ai_get_status(void)
     
     // 尝试从Python进程读取最新状态
     read_python_status();
+    
+    // 处理AI控制命令 (如果AI已启用)
+    if (current_status.is_enabled) {
+        process_ai_control();
+    }
+    
+    // 再次获取更新后的状态
+    pthread_mutex_lock(&status_mutex);
+    status = current_status;
+    pthread_mutex_unlock(&status_mutex);
     
     return status;
 }
@@ -417,8 +429,46 @@ static int send_python_command(const char* command)
 
 static int read_python_status(void)
 {
-    // 简化实现：在实际项目中，可以通过共享内存、管道或其他IPC机制
-    // 从Python进程读取状态信息
+    FILE* fp = fopen("/tmp/ai_status.json", "r");
+    if (!fp) {
+        return 0; // 文件不存在，忽略
+    }
+    
+    char buffer[512];
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        // 简单解析JSON (在实际项目中应该使用JSON库)
+        // 这里只是一个简化实现
+        if (strstr(buffer, "\"current_direction\":\"forward\"")) {
+            update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_FORWARD, current_status.confidence);
+        } else if (strstr(buffer, "\"current_direction\":\"left\"")) {
+            update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_LEFT, current_status.confidence);
+        } else if (strstr(buffer, "\"current_direction\":\"right\"")) {
+            update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_RIGHT, current_status.confidence);
+        } else {
+            update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_STOP, current_status.confidence);
+        }
+        
+        // 尝试解析置信度和帧数
+        char* conf_str = strstr(buffer, "\"confidence\":");
+        if (conf_str) {
+            float conf = 0.0;
+            sscanf(conf_str + 13, "%f", &conf);
+            pthread_mutex_lock(&status_mutex);
+            current_status.confidence = conf;
+            pthread_mutex_unlock(&status_mutex);
+        }
+        
+        char* frame_str = strstr(buffer, "\"frame_count\":");
+        if (frame_str) {
+            int frames = 0;
+            sscanf(frame_str + 14, "%d", &frames);
+            pthread_mutex_lock(&status_mutex);
+            current_status.frame_count = frames;
+            pthread_mutex_unlock(&status_mutex);
+        }
+    }
+    
+    fclose(fp);
     return 0;
 }
 
@@ -431,4 +481,70 @@ static void update_status(ai_state_t state, int enabled, ai_direction_t directio
     current_status.confidence = confidence;
     current_status.last_update = time(NULL);
     pthread_mutex_unlock(&status_mutex);
+}
+
+static int process_ai_control(void)
+{
+    FILE* fp = fopen("/tmp/ai_control.json", "r");
+    if (!fp) {
+        return 0; // 文件不存在，忽略
+    }
+    
+    char buffer[512];
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        // 解析控制命令
+        char direction[32] = {0};
+        float confidence = 0.0;
+        int speed = 50;
+        
+        // 简单解析JSON
+        char* dir_str = strstr(buffer, "\"direction\":\"");
+        if (dir_str) {
+            sscanf(dir_str + 13, "%31[^\"]", direction);
+        }
+        
+        char* conf_str = strstr(buffer, "\"confidence\":");
+        if (conf_str) {
+            sscanf(conf_str + 13, "%f", &confidence);
+        }
+        
+        char* speed_str = strstr(buffer, "\"speed\":");
+        if (speed_str) {
+            sscanf(speed_str + 8, "%d", &speed);
+        }
+        
+        // 执行控制命令 (只有置信度足够高才执行)
+        if (confidence > 0.7) {
+            if (strcmp(direction, "forward") == 0) {
+                wheel_forward(speed);
+                if (debug_mode) {
+                    printf("[AI] 执行前进，速度: %d, 置信度: %.3f\n", speed, confidence);
+                }
+            } else if (strcmp(direction, "left") == 0) {
+                wheel_left(speed);
+                if (debug_mode) {
+                    printf("[AI] 执行左转，速度: %d, 置信度: %.3f\n", speed, confidence);
+                }
+            } else if (strcmp(direction, "right") == 0) {
+                wheel_right(speed);
+                if (debug_mode) {
+                    printf("[AI] 执行右转，速度: %d, 置信度: %.3f\n", speed, confidence);
+                }
+            } else {
+                wheel_off();
+                if (debug_mode) {
+                    printf("[AI] 停止运动\n");
+                }
+            }
+        } else {
+            // 置信度不够，停止
+            wheel_off();
+            if (debug_mode) {
+                printf("[AI] 置信度不足(%.3f)，停止运动\n", confidence);
+            }
+        }
+    }
+    
+    fclose(fp);
+    return 0;
 }
