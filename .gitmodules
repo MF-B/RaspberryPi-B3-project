@@ -1,0 +1,9 @@
+[submodule "crate"]
+	path = crate
+	url = git@github.com:rxi/log.c.git
+[submodule "crates/log.h"]
+	path = crates/log.h
+	url = git@github.com:rxi/log.c.git
+[submodule "crates/log.c"]
+	path = crates/log.c
+	url = git@github.com:rxi/log.c.git
