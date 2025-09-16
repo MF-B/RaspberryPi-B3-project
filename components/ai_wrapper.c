@@ -197,12 +197,22 @@ ai_status_t ai_get_status(void)
     status = current_status;
     pthread_mutex_unlock(&status_mutex);
     
+    if (debug_mode) {
+        printf("[AI] 获取状态: 状态=%d, 启用=%d, 方向=%d, 置信度=%.3f\n", 
+               status.state, status.is_enabled, status.current_direction, status.confidence);
+    }
+    
     // 尝试从Python进程读取最新状态
     read_python_status();
     
     // 处理AI控制命令 (如果AI已启用)
     if (current_status.is_enabled) {
+        if (debug_mode) {
+            printf("[AI] AI已启用，处理控制命令...\n");
+        }
         process_ai_control();
+    } else if (debug_mode) {
+        printf("[AI] AI未启用，跳过控制处理\n");
     }
     
     // 再次获取更新后的状态
@@ -431,21 +441,32 @@ static int read_python_status(void)
 {
     FILE* fp = fopen("/tmp/ai_status.json", "r");
     if (!fp) {
+        if (debug_mode) {
+            printf("[AI] 状态文件不存在: /tmp/ai_status.json\n");
+        }
         return 0; // 文件不存在，忽略
     }
     
     char buffer[512];
     if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (debug_mode) {
+            printf("[AI] 读取状态文件内容: %s\n", buffer);
+        }
+        
         // 简单解析JSON (在实际项目中应该使用JSON库)
         // 这里只是一个简化实现
         if (strstr(buffer, "\"current_direction\":\"forward\"")) {
             update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_FORWARD, current_status.confidence);
+            if (debug_mode) printf("[AI] 检测到方向: forward\n");
         } else if (strstr(buffer, "\"current_direction\":\"left\"")) {
             update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_LEFT, current_status.confidence);
+            if (debug_mode) printf("[AI] 检测到方向: left\n");
         } else if (strstr(buffer, "\"current_direction\":\"right\"")) {
             update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_RIGHT, current_status.confidence);
+            if (debug_mode) printf("[AI] 检测到方向: right\n");
         } else {
             update_status(current_status.state, current_status.is_enabled, AI_DIRECTION_STOP, current_status.confidence);
+            if (debug_mode) printf("[AI] 检测到方向: stop\n");
         }
         
         // 尝试解析置信度和帧数
@@ -456,6 +477,7 @@ static int read_python_status(void)
             pthread_mutex_lock(&status_mutex);
             current_status.confidence = conf;
             pthread_mutex_unlock(&status_mutex);
+            if (debug_mode) printf("[AI] 更新置信度: %.3f\n", conf);
         }
         
         char* frame_str = strstr(buffer, "\"frame_count\":");
@@ -465,6 +487,11 @@ static int read_python_status(void)
             pthread_mutex_lock(&status_mutex);
             current_status.frame_count = frames;
             pthread_mutex_unlock(&status_mutex);
+            if (debug_mode) printf("[AI] 更新帧数: %d\n", frames);
+        }
+    } else {
+        if (debug_mode) {
+            printf("[AI] 状态文件为空或读取失败\n");
         }
     }
     
@@ -487,11 +514,18 @@ static int process_ai_control(void)
 {
     FILE* fp = fopen("/tmp/ai_control.json", "r");
     if (!fp) {
+        if (debug_mode) {
+            printf("[AI] 控制文件不存在: /tmp/ai_control.json\n");
+        }
         return 0; // 文件不存在，忽略
     }
     
     char buffer[512];
     if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (debug_mode) {
+            printf("[AI] 读取控制文件内容: %s\n", buffer);
+        }
+        
         // 解析控制命令
         char direction[32] = {0};
         float confidence = 0.0;
@@ -501,16 +535,19 @@ static int process_ai_control(void)
         char* dir_str = strstr(buffer, "\"direction\":\"");
         if (dir_str) {
             sscanf(dir_str + 13, "%31[^\"]", direction);
+            if (debug_mode) printf("[AI] 解析方向: %s\n", direction);
         }
         
         char* conf_str = strstr(buffer, "\"confidence\":");
         if (conf_str) {
             sscanf(conf_str + 13, "%f", &confidence);
+            if (debug_mode) printf("[AI] 解析置信度: %.3f\n", confidence);
         }
         
         char* speed_str = strstr(buffer, "\"speed\":");
         if (speed_str) {
             sscanf(speed_str + 8, "%d", &speed);
+            if (debug_mode) printf("[AI] 解析速度: %d\n", speed);
         }
         
         // 执行控制命令 (只有置信度足够高才执行)
@@ -542,6 +579,10 @@ static int process_ai_control(void)
             if (debug_mode) {
                 printf("[AI] 置信度不足(%.3f)，停止运动\n", confidence);
             }
+        }
+    } else {
+        if (debug_mode) {
+            printf("[AI] 控制文件为空或读取失败\n");
         }
     }
     

@@ -188,7 +188,7 @@ class AILineFollower:
             with open("/tmp/ai_control.json", "w") as f:
                 json.dump(control_data, f)
             
-            logger.debug(f"发送控制命令: {direction}, 置信度: {confidence:.3f}")
+            logger.debug(f"发送控制命令: {direction}, 置信度: {confidence:.3f}, 速度: {speed}")
         except Exception as e:
             logger.error(f"控制命令发送失败: {e}")
     
@@ -198,6 +198,7 @@ class AILineFollower:
             status = self.get_status()
             with open("/tmp/ai_status.json", "w") as f:
                 json.dump(status, f)
+            logger.debug(f"状态文件已更新: 方向={status['current_direction']}, 置信度={status['confidence']:.3f}, 帧数={status['frame_count']}")
         except Exception as e:
             logger.error(f"更新状态文件失败: {e}")
     
@@ -211,6 +212,8 @@ class AILineFollower:
                     time.sleep(0.1)
                     continue
                 
+                logger.debug("AI线程运行中，开始处理帧...")
+                
                 # 读取摄像头帧
                 ret, frame = self.cap.read()
                 if not ret:
@@ -220,6 +223,7 @@ class AILineFollower:
                 
                 # AI推理
                 direction, confidence = self.predict(frame)
+                logger.debug(f"AI推理结果: 方向={direction}, 置信度={confidence:.3f}")
                 
                 # 更新状态
                 with self.lock:
@@ -294,6 +298,7 @@ class AILineFollower:
         with self.lock:
             self.is_ai_enabled = True
         logger.info("AI寻迹已启用")
+        logger.info("AI寻迹已启用")
     
     def disable_ai(self):
         """禁用AI寻迹"""
@@ -306,6 +311,8 @@ class AILineFollower:
                 self.control_lib.wheel_off()
             except:
                 pass
+        
+        logger.info("AI寻迹已禁用")
         
         logger.info("AI寻迹已禁用")
     
