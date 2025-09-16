@@ -893,7 +893,7 @@ const AIController = {
     // 启动AI模块
     async startAI() {
         try {
-            showLoading();
+            Utils.showLoading();
             const response = await fetch(`${API_BASE_URL}/api/ai/start`, {
                 method: 'POST',
                 headers: {
@@ -904,23 +904,23 @@ const AIController = {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                showNotification('AI模块启动成功', 'success');
+                Utils.showNotification('AI模块启动成功', 'success');
                 await this.refreshStatus();
             } else {
                 throw new Error(data.message || 'AI模块启动失败');
             }
         } catch (error) {
             console.error('启动AI模块失败:', error);
-            showNotification(`启动AI模块失败: ${error.message}`, 'error');
+            Utils.showNotification(`启动AI模块失败: ${error.message}`, 'error');
         } finally {
-            hideLoading();
+            Utils.hideLoading();
         }
     },
 
     // 停止AI模块
     async stopAI() {
         try {
-            showLoading();
+            Utils.showLoading();
             const response = await fetch(`${API_BASE_URL}/api/ai/stop`, {
                 method: 'POST',
                 headers: {
@@ -931,23 +931,23 @@ const AIController = {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                showNotification('AI模块已停止', 'success');
+                Utils.showNotification('AI模块已停止', 'success');
                 await this.refreshStatus();
             } else {
                 throw new Error(data.message || 'AI模块停止失败');
             }
         } catch (error) {
             console.error('停止AI模块失败:', error);
-            showNotification(`停止AI模块失败: ${error.message}`, 'error');
+            Utils.showNotification(`停止AI模块失败: ${error.message}`, 'error');
         } finally {
-            hideLoading();
+            Utils.hideLoading();
         }
     },
 
     // 启用AI寻迹
     async enableTracking() {
         try {
-            showLoading();
+            Utils.showLoading();
             const response = await fetch(`${API_BASE_URL}/api/ai/enable`, {
                 method: 'POST',
                 headers: {
@@ -958,23 +958,23 @@ const AIController = {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                showNotification('AI寻迹已启用', 'success');
+                Utils.showNotification('AI寻迹已启用', 'success');
                 await this.refreshStatus();
             } else {
                 throw new Error(data.message || 'AI寻迹启用失败');
             }
         } catch (error) {
             console.error('启用AI寻迹失败:', error);
-            showNotification(`启用AI寻迹失败: ${error.message}`, 'error');
+            Utils.showNotification(`启用AI寻迹失败: ${error.message}`, 'error');
         } finally {
-            hideLoading();
+            Utils.hideLoading();
         }
     },
 
     // 禁用AI寻迹
     async disableTracking() {
         try {
-            showLoading();
+            Utils.showLoading();
             const response = await fetch(`${API_BASE_URL}/api/ai/disable`, {
                 method: 'POST',
                 headers: {
@@ -985,16 +985,16 @@ const AIController = {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                showNotification('AI寻迹已暂停', 'success');
+                Utils.showNotification('AI寻迹已暂停', 'success');
                 await this.refreshStatus();
             } else {
                 throw new Error(data.message || 'AI寻迹禁用失败');
             }
         } catch (error) {
             console.error('禁用AI寻迹失败:', error);
-            showNotification(`禁用AI寻迹失败: ${error.message}`, 'error');
+            Utils.showNotification(`禁用AI寻迹失败: ${error.message}`, 'error');
         } finally {
-            hideLoading();
+            Utils.hideLoading();
         }
     },
 
