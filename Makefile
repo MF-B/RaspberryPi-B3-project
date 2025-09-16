@@ -3,8 +3,8 @@ CC = gcc
 CXX = g++
 CFLAGS = -Wall -Wextra -std=c99 -D_GNU_SOURCE
 CXXFLAGS = -Wall -Wextra -std=c++11
-LDFLAGS = -lwiringPi -lpthread -lcjson -lm `pkg-config --libs opencv4` `python3-config --ldflags`
-INCLUDES = -Icomponents -Iweb -Icrates/log.c/src `pkg-config --cflags opencv4` `python3-config --includes`
+LDFLAGS = -lwiringPi -lpthread -lcjson -lm `pkg-config --libs opencv4` `python3.11-config --ldflags` -lpython3.11
+INCLUDES = -Icomponents -Iweb -Icrates/log.c/src `pkg-config --cflags opencv4` `python3.11-config --includes`
 
 # 源文件
 C_SRCS = main.c \
