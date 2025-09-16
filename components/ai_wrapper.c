@@ -1,12 +1,12 @@
 #include "ai.h"
-#include <python3.8/Python.h>
+#include <python3.11/Python.h>
 #include <signal.h>
 #include <sys/wait.h>
 
 // 全局变量
 static ai_status_t current_status = {AI_STATE_STOPPED, 0, AI_DIRECTION_STOP, 0.0, 0, 0};
 static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int debug_mode = 0;
+static int debug_mode = 1; // 启用调试模式
 static char model_path[256] = "./model/line_follower.tflite";
 static int camera_index = 0;
 static pid_t python_pid = -1;
@@ -304,16 +304,61 @@ void ai_print_status(void)
 static int start_python_process(void)
 {
     char command[512];
-    snprintf(command, sizeof(command), "python3 %s 2>&1", AI_SCRIPT_PATH);
     
-    python_pipe = popen(command, "w");
-    if (!python_pipe) {
-        printf("[AI] 错误: 无法启动Python进程\n");
+    if (debug_mode) {
+        printf("[AI] 启动Python进程...\n");
+    }
+    
+    // 检查Python3是否可用
+    int ret = system("python3 --version > /dev/null 2>&1");
+    if (ret != 0) {
+        printf("[AI] 错误: Python3 不可用\n");
         return -1;
     }
     
-    // 获取进程ID(简化实现)
-    python_pid = 1; // 实际应该获取真实PID
+    // 检查AI脚本文件是否存在
+    if (access(AI_SCRIPT_PATH, F_OK) != 0) {
+        printf("[AI] 错误: AI脚本文件不存在: %s\n", AI_SCRIPT_PATH);
+        return -1;
+    }
+    
+    // 构建启动命令 - 使用后台进程方式
+    snprintf(command, sizeof(command), 
+             "cd %s && python3 %s --daemon --status-file=/tmp/ai_status.json > /tmp/ai.log 2>&1 &",
+             ".", AI_SCRIPT_PATH);
+    
+    if (debug_mode) {
+        printf("[AI] 执行命令: %s\n", command);
+    }
+    
+    // 启动Python进程
+    ret = system(command);
+    if (ret != 0) {
+        printf("[AI] 错误: 无法启动Python进程 (返回码: %d)\n", ret);
+        return -1;
+    }
+    
+    // 等待进程启动
+    sleep(2);
+    
+    // 查找Python进程PID
+    FILE* fp = popen("pgrep -f 'python3.*ai.py'", "r");
+    if (fp) {
+        char pid_str[32];
+        if (fgets(pid_str, sizeof(pid_str), fp)) {
+            python_pid = atoi(pid_str);
+            if (debug_mode) {
+                printf("[AI] 找到Python进程PID: %d\n", python_pid);
+            }
+        }
+        pclose(fp);
+    }
+    
+    if (python_pid <= 0) {
+        printf("[AI] 警告: 无法获取Python进程PID，但进程可能已启动\n");
+        // 不返回错误，继续执行
+        python_pid = 1; // 设置一个虚拟PID
+    }
     
     if (debug_mode) {
         printf("[AI] Python进程启动成功\n");
@@ -324,23 +369,50 @@ static int start_python_process(void)
 
 static int stop_python_process(void)
 {
-    if (python_pipe) {
-        // 发送停止命令
-        send_python_command("stop");
+    if (debug_mode) {
+        printf("[AI] 停止Python进程...\n");
+    }
+    
+    if (python_pid > 1) { // 只有真实PID才尝试终止
+        if (debug_mode) {
+            printf("[AI] 终止Python进程 (PID: %d)\n", python_pid);
+        }
         
-        // 关闭管道
+        // 先尝试友好关闭
+        kill(python_pid, SIGTERM);
+        
+        // 等待一段时间
+        sleep(1);
+        
+        // 检查进程是否还存在
+        if (kill(python_pid, 0) == 0) {
+            // 强制终止
+            kill(python_pid, SIGKILL);
+            if (debug_mode) {
+                printf("[AI] 强制终止Python进程\n");
+            }
+        }
+        
+        // 等待进程完全结束
+        int status;
+        waitpid(python_pid, &status, WNOHANG);
+    } else {
+        // 尝试通过进程名终止
+        if (debug_mode) {
+            printf("[AI] 通过进程名终止Python进程\n");
+        }
+        system("pkill -f 'python3.*ai.py' 2>/dev/null");
+    }
+    
+    python_pid = -1;
+    
+    if (python_pipe) {
         pclose(python_pipe);
         python_pipe = NULL;
     }
     
-    if (python_pid > 0) {
-        // 终止进程
-        kill(python_pid, SIGTERM);
-        
-        // 等待进程结束
-        int status;
-        waitpid(python_pid, &status, WNOHANG);
-        python_pid = -1;
+    if (debug_mode) {
+        printf("[AI] Python进程已停止\n");
     }
     
     return 0;

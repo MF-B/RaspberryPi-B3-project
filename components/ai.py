@@ -363,30 +363,102 @@ def get_ai_status():
 
 # 如果直接运行此脚本，进行测试
 if __name__ == "__main__":
-    # 测试AI模块
-    ai = AILineFollower()
+    import argparse
+    import json
+    import signal
+    
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='AI黑线寻迹模块')
+    parser.add_argument('--daemon', action='store_true', help='以守护进程模式运行')
+    parser.add_argument('--status-file', default='/tmp/ai_status.json', help='状态文件路径')
+    parser.add_argument('--model', default='./model/line_follower.tflite', help='模型文件路径')
+    parser.add_argument('--camera', type=int, default=0, help='摄像头索引')
+    
+    args = parser.parse_args()
+    
+    # 全局变量
+    ai = None
+    status_file = args.status_file
+    
+    def signal_handler(signum, frame):
+        """信号处理器"""
+        global ai
+        if signum == signal.SIGUSR1:
+            # 启用AI寻迹
+            if ai:
+                ai.enable_ai()
+                logger.info("收到启用信号")
+        elif signum == signal.SIGUSR2:
+            # 禁用AI寻迹
+            if ai:
+                ai.disable_ai()
+                logger.info("收到禁用信号")
+        elif signum in [signal.SIGTERM, signal.SIGINT]:
+            # 退出信号
+            logger.info("收到退出信号")
+            if ai:
+                ai.stop()
+            sys.exit(0)
+    
+    def write_status_file():
+        """写入状态文件"""
+        global ai, status_file
+        if ai:
+            try:
+                status = ai.get_status()
+                with open(status_file, 'w') as f:
+                    json.dump(status, f)
+            except Exception as e:
+                logger.error(f"写入状态文件失败: {e}")
+    
+    # 设置信号处理器
+    signal.signal(signal.SIGUSR1, signal_handler)
+    signal.signal(signal.SIGUSR2, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
     
     try:
-        if ai.start():
-            print("AI模块启动成功，按 'q' 退出...")
-            ai.enable_ai()
+        # 创建AI实例
+        ai = AILineFollower(model_path=args.model, camera_index=args.camera)
+        
+        if args.daemon:
+            # 守护进程模式
+            logger.info("启动守护进程模式")
             
-            while True:
-                status = ai.get_status()
-                print(f"方向: {status['current_direction']}, "
-                      f"置信度: {status['confidence']:.3f}, "
-                      f"帧数: {status['frame_count']}")
+            if ai.start():
+                logger.info("AI模块启动成功")
                 
-                # 检查退出条件
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-                
-                time.sleep(1)
+                # 主循环
+                while True:
+                    write_status_file()
+                    time.sleep(1)
+            else:
+                logger.error("AI模块启动失败")
+                sys.exit(1)
         else:
-            print("AI模块启动失败")
+            # 交互模式
+            if ai.start():
+                print("AI模块启动成功，按 Ctrl+C 退出...")
+                
+                while True:
+                    status = ai.get_status()
+                    print(f"方向: {status['current_direction']}, "
+                          f"置信度: {status['confidence']:.3f}, "
+                          f"帧数: {status['frame_count']}")
+                    
+                    time.sleep(1)
+            else:
+                print("AI模块启动失败")
+                sys.exit(1)
     
     except KeyboardInterrupt:
-        print("用户中断")
+        logger.info("用户中断")
+    except Exception as e:
+        logger.error(f"程序运行错误: {e}")
     finally:
-        ai.stop()
-        cv2.destroyAllWindows()
+        if ai:
+            ai.stop()
+        try:
+            cv2.destroyAllWindows()
+        except:
+            pass
