@@ -122,6 +122,39 @@ void wheel_right(int speed)
     printf("车轮控制: 右转 - 速度 %d\n", speed);
 }
 
+// 停止
+void wheel_stop(void)
+{
+    wheel_set_motor(WHEEL_LP, WHEEL_LN, 0, 0);
+    wheel_set_motor(WHEEL_RP, WHEEL_RN, 0, 0);
+    update_motion_state(0, 0, MOTION_STOP);
+    printf("车轮控制: 停止\n");
+}
+
+// 原地左转 (左轮后退，右轮前进)
+void wheel_spinleft(int speed)
+{
+    if (speed < 0) speed = 0;
+    if (speed > WHEEL_MAX_SPEED) speed = WHEEL_MAX_SPEED;
+    
+    wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, -1);  // 左轮后退
+    wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, 1);   // 右轮前进
+    update_motion_state(-speed, speed, MOTION_LEFT);
+    printf("车轮控制: 原地左转 - 速度 %d\n", speed);
+}
+
+// 原地右转 (左轮前进，右轮后退)
+void wheel_spinright(int speed)
+{
+    if (speed < 0) speed = 0;
+    if (speed > WHEEL_MAX_SPEED) speed = WHEEL_MAX_SPEED;
+    
+    wheel_set_motor(WHEEL_LP, WHEEL_LN, speed, 1);   // 左轮前进
+    wheel_set_motor(WHEEL_RP, WHEEL_RN, speed, -1);  // 右轮后退
+    update_motion_state(speed, -speed, MOTION_RIGHT);
+    printf("车轮控制: 原地右转 - 速度 %d\n", speed);
+}
+
 // 更新运动状态的内部函数
 static void update_motion_state(int left_speed, int right_speed, motion_type_t motion)
 {

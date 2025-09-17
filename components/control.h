@@ -48,5 +48,8 @@ void wheel_forward(int speed);
 void wheel_backward(int speed);
 void wheel_left(int speed);
 void wheel_right(int speed);
+void wheel_stop(void);
+void wheel_spinleft(int speed);
+void wheel_spinright(int speed);
 
 #endif

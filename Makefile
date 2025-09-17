@@ -3,7 +3,7 @@ CC = gcc
 CXX = g++
 CFLAGS = -Wall -Wextra -std=c99 -D_GNU_SOURCE
 CXXFLAGS = -Wall -Wextra -std=c++11
-LDFLAGS = -lwiringPi -lpthread -lcjson -lm `pkg-config --libs opencv4`
+LDFLAGS = -lwiringPi -lpthread -lcjson -lm -lstdc++ `pkg-config --libs opencv4`
 INCLUDES = -Icomponents -Iweb -Icrates/log.c/src `pkg-config --cflags opencv4`
 
 # Python集成相关设置
@@ -67,7 +67,7 @@ clean:
 
 # 编译AI测试程序
 test_ai: target_dir target/test_ai.o target/camera.o target/control.o target/ai_wrapper.o target/log.o
-	$(CC) $(CFLAGS) -o $@ target/test_ai.o target/camera.o target/control.o target/ai_wrapper.o target/log.o $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ target/test_ai.o target/camera.o target/control.o target/ai_wrapper.o target/log.o $(LDFLAGS)
 
 target/test_ai.o: test_ai.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@

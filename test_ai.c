@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <string.h>
 #include <wiringPi.h>
 #include "components/camera.h"
 #include "components/control.h"
