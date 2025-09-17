@@ -27,6 +27,10 @@ static std::mutex g_frame_mutex;
 static std::condition_variable g_frame_cv;
 static const size_t MAX_FRAME_BUFFER_SIZE = 5;
 
+// AI推理相关变量
+static bool g_ai_enabled = false;
+static std::mutex g_ai_mutex;
+
 // MJPEG流线程函数
 static void* stream_thread_func(void* arg) {
     (void)arg; // 避免未使用参数警告
@@ -260,6 +264,115 @@ void camera_free_frame(mjpeg_frame_t *frame) {
 // 检查是否正在流式传输
 int camera_is_streaming(void) {
     return g_stream_running ? 1 : 0;
+}
+
+// ====== AI推理相关函数实现 ======
+
+// 初始化AI推理功能
+int camera_ai_init(const char* model_path) {
+    std::lock_guard<std::mutex> lock(g_ai_mutex);
+    
+    printf("初始化摄像头AI推理功能...\n");
+    
+    // 调用AI封装模块初始化
+    if (ai_wrapper_init(model_path)) {
+        g_ai_enabled = true;
+        printf("摄像头AI推理功能初始化成功\n");
+        return 1;
+    } else {
+        g_ai_enabled = false;
+        printf("摄像头AI推理功能初始化失败\n");
+        return 0;
+    }
+}
+
+// 对当前帧进行AI推理
+int camera_ai_predict_current_frame(ai_result_t* result) {
+    if (!result) {
+        return 0;
+    }
+    
+    std::lock_guard<std::mutex> lock(g_ai_mutex);
+    
+    if (!g_ai_enabled) {
+        strcpy(result->error_msg, "AI功能未启用");
+        result->success = 0;
+        return 0;
+    }
+    
+    if (!g_camera.isOpened()) {
+        strcpy(result->error_msg, "摄像头未打开");
+        result->success = 0;
+        return 0;
+    }
+    
+    // 捕获当前帧
+    Mat frame;
+    g_camera >> frame;
+    
+    if (frame.empty()) {
+        strcpy(result->error_msg, "无法捕获帧");
+        result->success = 0;
+        return 0;
+    }
+    
+    // 调用AI推理
+    return ai_wrapper_predict(frame.data, frame.cols, frame.rows, 
+                             AI_DEFAULT_CONFIDENCE_THRESHOLD, result);
+}
+
+// 对指定MJPEG帧进行AI推理
+int camera_ai_predict_from_frame(mjpeg_frame_t* frame, ai_result_t* result) {
+    if (!frame || !frame->data || !result) {
+        return 0;
+    }
+    
+    std::lock_guard<std::mutex> lock(g_ai_mutex);
+    
+    if (!g_ai_enabled) {
+        strcpy(result->error_msg, "AI功能未启用");
+        result->success = 0;
+        return 0;
+    }
+    
+    try {
+        // 将JPEG数据解码为OpenCV Mat
+        std::vector<uchar> jpeg_data(frame->data, frame->data + frame->size);
+        Mat decoded_frame = imdecode(jpeg_data, IMREAD_COLOR);
+        
+        if (decoded_frame.empty()) {
+            strcpy(result->error_msg, "JPEG解码失败");
+            result->success = 0;
+            return 0;
+        }
+        
+        // 调用AI推理
+        return ai_wrapper_predict(decoded_frame.data, decoded_frame.cols, decoded_frame.rows,
+                                 AI_DEFAULT_CONFIDENCE_THRESHOLD, result);
+        
+    } catch (const std::exception& e) {
+        snprintf(result->error_msg, sizeof(result->error_msg), "帧处理异常: %s", e.what());
+        result->success = 0;
+        return 0;
+    }
+}
+
+// 清理AI推理功能
+void camera_ai_cleanup(void) {
+    std::lock_guard<std::mutex> lock(g_ai_mutex);
+    
+    if (g_ai_enabled) {
+        printf("清理摄像头AI推理功能...\n");
+        ai_wrapper_cleanup();
+        g_ai_enabled = false;
+        printf("摄像头AI推理功能已清理\n");
+    }
+}
+
+// 检查AI功能是否启用
+int camera_ai_is_enabled(void) {
+    std::lock_guard<std::mutex> lock(g_ai_mutex);
+    return g_ai_enabled ? 1 : 0;
 }
 
 } // extern "C"

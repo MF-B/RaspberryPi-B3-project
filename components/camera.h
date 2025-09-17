@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "../ai_wrapper.h"  // AI推理功能
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +44,13 @@ int camera_stop_stream(void);
 int camera_get_mjpeg_frame(mjpeg_frame_t *frame);
 void camera_free_frame(mjpeg_frame_t *frame);
 int camera_is_streaming(void);
+
+// AI推理相关函数
+int camera_ai_init(const char* model_path);
+int camera_ai_predict_current_frame(ai_result_t* result);
+int camera_ai_predict_from_frame(mjpeg_frame_t* frame, ai_result_t* result);
+void camera_ai_cleanup(void);
+int camera_ai_is_enabled(void);
 
 #ifdef __cplusplus
 }

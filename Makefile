@@ -6,11 +6,21 @@ CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -lwiringPi -lpthread -lcjson -lm `pkg-config --libs opencv4`
 INCLUDES = -Icomponents -Iweb -Icrates/log.c/src `pkg-config --cflags opencv4`
 
+# Python集成相关设置
+PYTHON_INCLUDES = `python3-config --includes`
+PYTHON_LIBS = `python3-config --ldflags --embed 2>/dev/null || python3-config --ldflags`
+
+# 添加Python支持到编译标志
+CFLAGS += $(PYTHON_INCLUDES)
+CXXFLAGS += $(PYTHON_INCLUDES)
+LDFLAGS += $(PYTHON_LIBS)
+
 # 源文件
 C_SRCS = main.c \
          components/button.c components/clock.c components/beep.c components/rgb.c components/temp.c components/distance.c components/control.c \
          web/http_server.c web/api_handlers.c \
-         crates/log.c/src/log.c
+         crates/log.c/src/log.c \
+         ai_wrapper.c
 
 CXX_SRCS = components/camera.cpp
 
@@ -42,16 +52,27 @@ target/%.o: crates/log.c/src/%.c
 target/main.o: main.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
+# AI wrapper编译规则
+target/ai_wrapper.o: ai_wrapper.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
 # C++文件编译规则
 target/%.o: components/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # 清理
 clean:
-	rm -f $(TARGET) target/*.o
+	rm -f $(TARGET) target/*.o test_ai
 	rmdir target 2>/dev/null || true
+
+# 编译AI测试程序
+test_ai: target_dir target/test_ai.o target/camera.o target/control.o target/ai_wrapper.o target/log.o
+	$(CC) $(CFLAGS) -o $@ target/test_ai.o target/camera.o target/control.o target/ai_wrapper.o target/log.o $(LDFLAGS)
+
+target/test_ai.o: test_ai.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # 重新编译
 rebuild: clean all
 
-.PHONY: all clean rebuild target_dir
+.PHONY: all clean rebuild target_dir test_ai
