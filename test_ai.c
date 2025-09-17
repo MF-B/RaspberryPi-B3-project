@@ -40,9 +40,7 @@ void control_wheels_by_ai_result(const ai_result_t* result) {
     switch (result->class_id) {
         case AI_CLASS_LEFT:
             printf("执行左转\n");
-            wheel_stop();
-            delay(100);
-            wheel_spinleft(CONTROL_SPEED);
+            wheel_left(CONTROL_SPEED);
             break;
             
         case AI_CLASS_FORWARD:
@@ -52,9 +50,7 @@ void control_wheels_by_ai_result(const ai_result_t* result) {
             
         case AI_CLASS_RIGHT:
             printf("执行右转\n");
-            wheel_stop();
-            delay(100);
-            wheel_spinright(CONTROL_SPEED);
+            wheel_right(CONTROL_SPEED);
             break;
             
         case AI_CLASS_STOP:
@@ -84,7 +80,7 @@ int main(int argc, char* argv[]) {
     
     // 初始化摄像头
     printf("初始化摄像头...\n");
-    if (!camera_init()) {
+    if (camera_init()!=0) {
         printf("错误: 摄像头初始化失败\n");
         return 1;
     }

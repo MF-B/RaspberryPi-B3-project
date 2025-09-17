@@ -151,7 +151,7 @@ class LineFollowerAI:
                 "class_id": int(pred_class),
                 "class_name": class_name,
                 "confidence": float(confidence),
-                "meets_threshold": confidence >= confidence_threshold,
+                "meets_threshold": bool(confidence >= confidence_threshold),  # 确保返回Python原生bool
                 "all_scores": output[0].tolist()
             }
             
